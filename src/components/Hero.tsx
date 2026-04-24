@@ -104,7 +104,7 @@ export default function Hero() {
                 ─────────────────────────────────────────────────────────────────
               */}
               <a
-                href="https://drive.google.com/file/d/1QH3nKFIy3_SYLo8dQYVWPJkegCk0j95_/view?usp=drive_link"
+                href="https://www.figma.com/deck/tvu603XFbQAHsmvger0szl"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-5 py-3 rounded-full font-semibold text-sm border border-white/25 hover:border-white/70 transition-colors duration-300"
