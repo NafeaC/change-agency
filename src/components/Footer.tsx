@@ -1,5 +1,4 @@
 import { useLanguage } from "../hooks/useLanguage";
-import logoWhite from "@assets/ChangeLogoWhite_1776929556411.png";
 
 export default function Footer() {
   const { t } = useLanguage();
@@ -9,7 +8,7 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto flex flex-col gap-16">
         <div className="flex flex-col md:flex-row justify-between items-start gap-12">
           <div className="max-w-sm">
-            <img src={logoWhite} alt="Change Advertising Agency" className="h-10 w-auto mb-4" />
+            <img src="/ChangeLogoWhite_1776929556411.png" alt="Change Advertising Agency" className="h-10 w-auto mb-4" />
             <p className="text-white/60 font-light text-lg">
               {t("Strategic marketing partner since 2010", "شريكك التسويقي الاستراتيجي منذ 2010")}
             </p>
@@ -24,16 +23,17 @@ export default function Footer() {
                 </a>
               ))}
             </div>
-            
+
             <div className="flex flex-col gap-4">
               <h4 className="font-bold text-white/50 uppercase tracking-widest text-sm mb-2">{t("Social", "منصاتنا")}</h4>
-              {["Instagram", "Twitter/X", "LinkedIn", "Snapchat"].map(link => (
-                <a key={link} href="#" className="hover:text-accent transition-colors font-medium">
-                  {link}
-                </a>
-              ))}
+              <a href="https://www.instagram.com/change.adv/" target="_blank" rel="noopener noreferrer" className="hover:text-accent transition-colors font-medium">
+                Instagram
+              </a>
+              <a href="https://www.linkedin.com/company/change-adv" target="_blank" rel="noopener noreferrer" className="hover:text-accent transition-colors font-medium">
+                LinkedIn
+              </a>
             </div>
-            
+
             <div className="col-span-2 md:col-span-1 flex flex-col gap-4">
               <h4 className="font-bold text-white/50 uppercase tracking-widest text-sm mb-2">{t("Contact", "تواصل")}</h4>
               <a href="mailto:info@change.sa" className="hover:text-accent transition-colors font-medium">info@change.sa</a>
