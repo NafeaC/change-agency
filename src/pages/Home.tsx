@@ -2,7 +2,9 @@ import { useLanguage } from "../hooks/useLanguage";
 import Nav from "../components/Nav";
 import Hero from "../components/Hero";
 import About from "../components/About";
+import Process from "../components/Process";
 import Services from "../components/Services";
+import Portfolio from "../components/Portfolio";
 import WhyChange from "../components/WhyChange";
 import Clients from "../components/Clients";
 import Stats from "../components/Stats";
@@ -16,7 +18,9 @@ export default function Home() {
       <main className="flex-1 w-full">
         <Hero />
         <About />
+        <Process />
         <Services />
+        <Portfolio />
         <WhyChange />
         <Clients />
         <Stats />
