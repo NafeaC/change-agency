@@ -58,11 +58,16 @@ export default function Nav() {
           ))}
         </div>
 
-        {/* Language toggle */}
+        {/* Language toggle — shows the flag of the language you'll switch to */}
         <button
           onClick={() => setLanguage(language === "en" ? "ar" : "en")}
-          className="w-10 h-10 rounded-full border border-white/30 text-white flex items-center justify-center text-xs font-bold hover:bg-white hover:text-black transition-colors duration-300 shrink-0"
+          className="h-10 ps-1.5 pe-3 rounded-full border border-white/30 text-white flex items-center gap-2 text-xs font-bold hover:bg-white hover:text-black transition-colors duration-300 shrink-0"
         >
+          <img
+            src={language === "en" ? "/flags/sa.svg" : "/flags/us.svg"}
+            alt={language === "en" ? "Saudi Arabia" : "United States"}
+            className="w-6 h-[18px] rounded-[3px] object-cover ring-1 ring-white/30"
+          />
           {language === "en" ? "AR" : "EN"}
         </button>
       </div>
