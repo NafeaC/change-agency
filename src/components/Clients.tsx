@@ -31,6 +31,9 @@ const logos: { alt: string; src: string }[] = [
   { alt: "Monasbty Sweet",       src: "/logos/monasbty.png"       },
   { alt: "Prince",               src: "/logos/prince.png"         },
   { alt: "Client 20",            src: "/logos/unnamed.png"        },
+  { alt: "Kamikaz Cocktail Bar", src: "/logos/kamikaz.png"        },
+  { alt: "Laylat Zafafi",        src: "/logos/laylat-zafafi.png"  },
+  { alt: "Pump Coffee",          src: "/logos/pump-coffee.png"    },
 ];
 
 export default function Clients() {

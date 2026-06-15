@@ -7,6 +7,31 @@ export default function About() {
   return (
     <section id="about" className="py-32 px-6 bg-white text-black">
       <div className="max-w-7xl mx-auto">
+
+        {/* — Madinah image banner — */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          className="relative rounded-2xl overflow-hidden mb-16 group"
+        >
+          <img
+            src="/about/madinah.jpg"
+            alt={t("Al-Masjid an-Nabawi, Al-Madinah", "المسجد النبوي، المدينة المنورة")}
+            className="w-full h-[260px] sm:h-[360px] md:h-[460px] object-cover transition-transform duration-700 group-hover:scale-105"
+            loading="lazy"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+          <div className="absolute bottom-6 left-6 sm:bottom-8 sm:left-8 text-white">
+            <p className="text-xs sm:text-sm uppercase tracking-widest text-accent font-bold mb-1">
+              {t("Home Base", "مقرنا")}
+            </p>
+            <p className="text-lg sm:text-2xl font-bold">
+              {t("Proudly rooted in Al-Madinah, KSA", "بفخر من المدينة المنورة، المملكة العربية السعودية")}
+            </p>
+          </div>
+        </motion.div>
+
         <motion.div 
           initial={{ opacity: 0, y: 50 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -23,6 +48,12 @@ export default function About() {
               {t(
                 "A full-service advertising agency headquartered in Al-Madinah, KSA. We've served businesses across the Kingdom since 2010, building marketing strategies rooted in market reality — not guesswork.",
                 "وكالة إعلانات متكاملة الخدمات مقرها المدينة المنورة، المملكة العربية السعودية. قدمنا خدماتنا للشركات في جميع أنحاء المملكة منذ عام 2010، حيث نبني استراتيجيات تسويقية تستند إلى واقع السوق — وليس التخمين."
+              )}
+            </p>
+            <p className="mt-6 text-base md:text-lg text-black/60 font-light leading-relaxed">
+              {t(
+                "Successful marketing doesn't start with advertising — it starts with understanding the project, the market, and the audience, then building a clear strategy that guides every step that follows. We partner with companies seeking sustainable growth that need a team thinking like a business, not just an execution unit.",
+                "التسويق الناجح لا يبدأ من الإعلان، بل من فهم المشروع والسوق والجمهور، ثم بناء استراتيجية واضحة تقود كل خطوة لاحقة. نعمل مع شركات ومشاريع تبحث عن نمو مستدام، وتحتاج فريقًا يفكّر بعقلية بزنس لا بعقلية تنفيذ فقط."
               )}
             </p>
 

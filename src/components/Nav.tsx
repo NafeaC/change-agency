@@ -3,10 +3,10 @@ import { useLanguage } from "../hooks/useLanguage";
 import logoWhite from "@assets/ChangeLogoWhite_1776929556411.png";
 
 // Nav items mapped to their matching section IDs on the page.
-// "Work" and "Process" were removed — no corresponding sections exist.
 const navItems = [
   { en: "About",      ar: "من نحن",       id: "about"    },
   { en: "Services",   ar: "خدماتنا",      id: "services" },
+  { en: "Work",       ar: "أعمالنا",      id: "work"     },
   { en: "Why Change", ar: "لماذا تشينج؟", id: "why"      },
   { en: "Contact",    ar: "تواصل معنا",   id: "contact"  },
 ];

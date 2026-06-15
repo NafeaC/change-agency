@@ -1,7 +1,19 @@
 import { useLanguage } from "../hooks/useLanguage";
 
+// Footer links mapped to their matching section IDs on the page.
+const footerLinks: { en: string; ar: string; id: string }[] = [
+  { en: "About",    ar: "من نحن",   id: "about"    },
+  { en: "Services", ar: "خدماتنا",  id: "services" },
+  { en: "Work",     ar: "أعمالنا",  id: "work"     },
+  { en: "Contact",  ar: "تواصل معنا", id: "contact" },
+];
+
 export default function Footer() {
   const { t } = useLanguage();
+
+  const scrollTo = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+  };
 
   return (
     <footer className="bg-black text-white py-20 px-6 border-t border-white/10">
@@ -17,10 +29,14 @@ export default function Footer() {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-12 md:gap-24 w-full md:w-auto">
             <div className="flex flex-col gap-4">
               <h4 className="font-bold text-white/50 uppercase tracking-widest text-sm mb-2">{t("Links", "روابط")}</h4>
-              {["About", "Services", "Work", "Contact"].map(link => (
-                <a key={link} href="#" className="hover:text-accent transition-colors font-medium">
-                  {t(link, getArTranslation(link))}
-                </a>
+              {footerLinks.map(link => (
+                <button
+                  key={link.id}
+                  onClick={() => scrollTo(link.id)}
+                  className="text-start hover:text-accent transition-colors font-medium"
+                >
+                  {t(link.en, link.ar)}
+                </button>
               ))}
             </div>
 
@@ -45,8 +61,8 @@ export default function Footer() {
         <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4 text-white/40 text-sm font-light">
           <p>
             {t(
-              "© 2025 Change Advertising Agency. All Rights Reserved.",
-              "© 2025 وكالة تشينج للإعلان. جميع الحقوق محفوظة."
+              `© ${new Date().getFullYear()} Change Advertising Agency. All Rights Reserved.`,
+              `© ${new Date().getFullYear()} وكالة تشينج للإعلان. جميع الحقوق محفوظة.`
             )}
           </p>
           <div className="flex gap-6">
@@ -57,14 +73,4 @@ export default function Footer() {
       </div>
     </footer>
   );
-}
-
-function getArTranslation(item: string) {
-  const translations: Record<string, string> = {
-    "About": "من نحن",
-    "Services": "خدماتنا",
-    "Work": "أعمالنا",
-    "Contact": "تواصل معنا"
-  };
-  return translations[item] || item;
 }
