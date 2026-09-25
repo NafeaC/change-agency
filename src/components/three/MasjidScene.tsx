@@ -479,10 +479,9 @@ function Monument({ scroll }: { scroll?: MotionValue<number> }) {
       spin.current += drag.current.v + dt * 0.12; // slow turntable
     }
     const s = scroll ? scroll.get() : 0;
-    const intro = 1 - Math.pow(1 - Math.min(state.clock.elapsedTime / 2.6, 1), 3);
+    // starts exactly in the pose of the static poster, then turns slowly
     g.rotation.y = -0.55 + spin.current + s * 1.2;
-    g.position.y = THREE.MathUtils.lerp(-2.5, 0, intro) + Math.sin(state.clock.elapsedTime * 0.6) * 0.05;
-    g.scale.setScalar(THREE.MathUtils.lerp(0.85, 1, intro));
+    g.position.y = Math.sin(state.clock.elapsedTime * 0.6) * 0.05;
   });
 
   return (
@@ -534,23 +533,38 @@ function Rig({ scroll, shift }: { scroll?: MotionValue<number>; shift: number })
   const target = useMemo(() => new THREE.Vector3(0, 4.2, 0), []);
   const smooth = useRef({ x: 0, y: 0 });
 
-  useEffect(() => {
-    const cam = camera as THREE.PerspectiveCamera;
-    const portrait = size.width < size.height;
-    const shiftY = portrait ? size.height * 0.24 : 0;
-    if (shift || shiftY) cam.setViewOffset(size.width, size.height, -size.width * shift, shiftY, size.width, size.height);
-    else cam.clearViewOffset();
-    cam.updateProjectionMatrix();
-  }, [camera, size, shift]);
+  const offsetKey = useRef("");
 
   useFrame(({ pointer }) => {
+    // Side/vertical frame offset, applied before the very first render so
+    // the model never flashes in the wrong place.
+    const cam = camera as THREE.PerspectiveCamera;
+    const key = `${size.width}x${size.height}:${shift}`;
+    if (offsetKey.current !== key) {
+      offsetKey.current = key;
+      const shiftY = size.width < size.height ? size.height * 0.24 : 0;
+      if (shift || shiftY) cam.setViewOffset(size.width, size.height, -size.width * shift, shiftY, size.width, size.height);
+      else cam.clearViewOffset();
+      cam.updateProjectionMatrix();
+    }
+
     smooth.current.x += (pointer.x - smooth.current.x) * 0.05;
     smooth.current.y += (pointer.y - smooth.current.y) * 0.05;
     const s = scroll ? scroll.get() : 0;
     const portrait = size.width < size.height;
-    const dist = (portrait ? 48 : 26.5) - s * 4;
+    const dist = (portrait ? 48 : 28.5) - s * 4;
     camera.position.set(smooth.current.x * 1.6, 4.2 + smooth.current.y * 0.8 + s * 2.5, dist);
     camera.lookAt(target);
+  });
+  return null;
+}
+
+// Tells the page once a few frames have actually been drawn.
+function ReadySignal({ onReady }: { onReady?: () => void }) {
+  const frames = useRef(0);
+  useFrame(() => {
+    frames.current += 1;
+    if (frames.current === 8) onReady?.();
   });
   return null;
 }
@@ -560,19 +574,21 @@ export default function MasjidScene({
   shift = 0,
   paused = false,
   lowPower = false,
+  onReady,
 }: {
   scroll?: MotionValue<number>;
   shift?: number;
   paused?: boolean;
   lowPower?: boolean;
+  onReady?: () => void;
 }) {
   return (
     <Canvas
       frameloop={paused ? "never" : "always"}
       dpr={lowPower ? [1, 1.5] : [1, 2]}
       camera={{ fov: 30, near: 0.5, far: 120, position: [0, 4.2, 22] }}
-      gl={{ antialias: true, powerPreference: "high-performance", toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.05 }}
-      onCreated={({ gl }) => gl.setClearColor("#050403")}
+      gl={{ alpha: true, antialias: true, powerPreference: "high-performance", toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.05 }}
+      onCreated={({ gl }) => gl.setClearColor(0x000000, 0)}
     >
       <SceneFog />
 
@@ -590,31 +606,6 @@ export default function MasjidScene({
         <Lightformer form="ring" intensity={2} color="#ffffff" position={[0, 10, -4]} scale={3} />
       </Environment>
 
-      {/* amber halo behind the monument */}
-      <mesh position={[0, 5, -9]}>
-        <planeGeometry args={[30, 20]} />
-        <meshBasicMaterial transparent depthWrite={false} opacity={0.9} fog={false} toneMapped={false}>
-          <canvasTexture
-            attach="map"
-            args={[
-              (() => {
-                const c = document.createElement("canvas");
-                c.width = c.height = 256;
-                const g = c.getContext("2d")!;
-                const grd = g.createRadialGradient(128, 128, 0, 128, 128, 128);
-                grd.addColorStop(0, "rgba(245,166,35,0.16)");
-                grd.addColorStop(0.3, "rgba(245,166,35,0.07)");
-                grd.addColorStop(0.6, "rgba(245,166,35,0.02)");
-                grd.addColorStop(0.85, "rgba(245,166,35,0)");
-                g.fillStyle = grd;
-                g.fillRect(0, 0, 256, 256);
-                return c;
-              })(),
-            ]}
-          />
-        </meshBasicMaterial>
-      </mesh>
-
       <Monument scroll={scroll} />
       {!lowPower && <Floor />}
       {lowPower && (
@@ -625,6 +616,7 @@ export default function MasjidScene({
       )}
       <Sparkles count={lowPower ? 40 : 90} scale={[14, 10, 8]} position={[0, 5, 0]} size={2.2} speed={0.3} color="#ffc766" opacity={0.8} />
       <Rig scroll={scroll} shift={shift} />
+      <ReadySignal onReady={onReady} />
 
       <EffectComposer multisampling={0}>
         <Bloom mipmapBlur intensity={0.55} luminanceThreshold={0.85} luminanceSmoothing={0.15} />
