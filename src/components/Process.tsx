@@ -1,6 +1,7 @@
 import { useLanguage } from "../hooks/useLanguage";
 import { motion } from "framer-motion";
 import { Search, Compass, Lightbulb, Rocket, TrendingUp } from "lucide-react";
+import SectionHeading from "./SectionHeading";
 
 export default function Process() {
   const { t } = useLanguage();
@@ -49,61 +50,51 @@ export default function Process() {
   ];
 
   return (
-    <section id="process" className="py-32 px-6 bg-[#0a0a0a] text-white">
+    <section id="process" className="py-24 md:py-32 px-6 bg-neutral-100 text-black">
       <div className="max-w-7xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 50 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          className="text-center mb-20"
-        >
-          <h2 className="text-5xl md:text-7xl font-bold tracking-tighter uppercase mb-6">
-            {t("Our", "منهجية")} <span className="text-accent">{t("Process", "عملنا")}</span>
-          </h2>
-          <p className="text-white/50 text-lg md:text-xl font-light max-w-2xl mx-auto">
-            {t(
-              "We work according to a clear, connected methodology — every step serves the final goal.",
-              "نعمل وفق منهجية واضحة ومترابطة، تضمن أن كل خطوة تخدم الهدف النهائي."
-            )}
-          </p>
-        </motion.div>
+        <SectionHeading
+          tone="light"
+          align="center"
+          eyebrow={t("How We Work", "كيف نعمل")}
+          title={
+            <>
+              {t("Our", "منهجية")} <span className="text-accent">{t("Process", "عملنا")}</span>
+            </>
+          }
+          intro={t(
+            "A clear, connected methodology — every step serves the final goal.",
+            "نعمل وفق منهجية واضحة ومترابطة، تضمن أن كل خطوة تخدم الهدف النهائي."
+          )}
+          className="mb-16 md:mb-20"
+        />
 
-        {/* — Steps — */}
-        <div className="relative">
+        <ol className="relative grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
           {/* connecting line (desktop only) */}
-          <div className="hidden lg:block absolute top-9 left-0 right-0 h-px bg-white/10" />
+          <div aria-hidden="true" className="hidden lg:block absolute top-[3.25rem] inset-x-[10%] h-px bg-black/10" />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-6">
-            {steps.map((step, i) => {
-              const Icon = step.icon;
-              return (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-50px" }}
-                  transition={{ delay: i * 0.1 }}
-                  className="relative flex flex-col items-center text-center"
-                >
-                  {/* icon circle */}
-                  <div className="relative z-10 w-[72px] h-[72px] rounded-full bg-accent flex items-center justify-center mb-6">
-                    <Icon className="w-7 h-7 text-white" strokeWidth={1.75} />
-                  </div>
-
-                  <div className="text-accent text-xs font-bold tracking-widest mb-2 uppercase">
-                    {`0${i + 1}`}
-                  </div>
-                  <h3 className="text-xl font-bold uppercase mb-3 tracking-tight">
-                    {step.title}
-                  </h3>
-                  <p className="text-white/50 font-light leading-relaxed text-sm max-w-[14rem]">
-                    {step.desc}
-                  </p>
-                </motion.div>
-              );
-            })}
-          </div>
-        </div>
+          {steps.map((step, i) => {
+            const Icon = step.icon;
+            return (
+              <motion.li
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ delay: i * 0.08, duration: 0.6 }}
+                className="relative flex flex-col items-center text-center bg-white rounded-2xl border border-black/5 px-6 pt-6 pb-8 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/5 transition-all duration-300"
+              >
+                <div className="relative z-10 w-14 h-14 rounded-full bg-black text-accent flex items-center justify-center mb-5 ring-8 ring-neutral-100">
+                  <Icon className="w-6 h-6" strokeWidth={1.75} aria-hidden="true" />
+                </div>
+                <span className="text-accent-ink text-xs font-bold tracking-widest mb-2">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <h3 className="text-lg font-bold uppercase mb-2 tracking-tight">{step.title}</h3>
+                <p className="text-black/60 font-light leading-relaxed text-sm">{step.desc}</p>
+              </motion.li>
+            );
+          })}
+        </ol>
       </div>
     </section>
   );
