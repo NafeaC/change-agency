@@ -1,74 +1,113 @@
+import { Link } from "wouter";
+import { FaInstagram, FaLinkedinIn, FaWhatsapp } from "react-icons/fa";
 import { useLanguage } from "../hooks/useLanguage";
-
-// Footer links mapped to their matching section IDs on the page.
-const footerLinks: { en: string; ar: string; id: string }[] = [
-  { en: "About",    ar: "من نحن",   id: "about"    },
-  { en: "Services", ar: "خدماتنا",  id: "services" },
-  { en: "Work",     ar: "أعمالنا",  id: "work"     },
-  { en: "Contact",  ar: "تواصل معنا", id: "contact" },
-];
+import { CONTACT, LOGO_WHITE, SOCIAL } from "@/lib/site";
+import { navItems } from "./Nav";
 
 export default function Footer() {
-  const { t } = useLanguage();
+  const { t, language, altHref } = useLanguage();
 
-  const scrollTo = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-  };
+  const services = [
+    t("Branding & Identity", "الهوية التجارية"),
+    t("Digital Marketing", "التسويق الرقمي"),
+    t("Video Production", "إنتاج الفيديو"),
+    t("Photography", "التصوير الاحترافي"),
+    t("Printing & Signage", "الطباعة واللوحات"),
+    t("Exhibition Booths", "أجنحة المعارض"),
+  ];
+
+  const socials = [
+    { icon: FaInstagram, href: SOCIAL.instagram, label: "Instagram" },
+    { icon: FaLinkedinIn, href: SOCIAL.linkedin, label: "LinkedIn" },
+    { icon: FaWhatsapp, href: CONTACT.whatsapp, label: "WhatsApp" },
+  ];
+
+  const heading = "font-bold text-white/40 uppercase tracking-widest text-xs mb-5";
+  const link = "text-white/75 hover:text-accent transition-colors";
 
   return (
-    <footer className="bg-black text-white py-20 px-6 border-t border-white/10">
-      <div className="max-w-7xl mx-auto flex flex-col gap-16">
-        <div className="flex flex-col md:flex-row justify-between items-start gap-12">
-          <div className="max-w-sm">
-            <img src="/ChangeLogoWhite_1776929556411.png" alt="Change Advertising Agency" className="h-10 w-auto mb-4" />
-            <p className="text-white/60 font-light text-lg">
-              {t("Strategic marketing partner since 2010", "شريكك التسويقي الاستراتيجي منذ 2010")}
+    <footer className="bg-black text-white pt-20 pb-10 px-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="grid grid-cols-2 md:grid-cols-12 gap-x-8 gap-y-12">
+          <div className="col-span-2 md:col-span-4">
+            <img src={LOGO_WHITE} alt={t("Change Advertising Agency", "وكالة تشينج للإعلان")} width={170} height={40} loading="lazy" className="h-10 w-auto" />
+            <p className="mt-5 text-white/55 font-light leading-relaxed max-w-xs">
+              {t(
+                "Full-service advertising agency in Al-Madinah, Saudi Arabia. Your strategic marketing partner since 2010.",
+                "وكالة إعلانية متكاملة في المدينة المنورة. شريكك التسويقي الاستراتيجي منذ 2010."
+              )}
             </p>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-12 md:gap-24 w-full md:w-auto">
-            <div className="flex flex-col gap-4">
-              <h4 className="font-bold text-white/50 uppercase tracking-widest text-sm mb-2">{t("Links", "روابط")}</h4>
-              {footerLinks.map(link => (
-                <button
-                  key={link.id}
-                  onClick={() => scrollTo(link.id)}
-                  className="text-start hover:text-accent transition-colors font-medium"
-                >
-                  {t(link.en, link.ar)}
-                </button>
+            <ul className="mt-6 flex gap-3">
+              {socials.map(({ icon: Icon, href, label }) => (
+                <li key={label}>
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={label}
+                    className="w-10 h-10 rounded-full border border-white/15 flex items-center justify-center hover:bg-accent hover:border-accent hover:text-black transition-colors"
+                  >
+                    <Icon className="w-4 h-4" aria-hidden="true" />
+                  </a>
+                </li>
               ))}
-            </div>
-
-            <div className="flex flex-col gap-4">
-              <h4 className="font-bold text-white/50 uppercase tracking-widest text-sm mb-2">{t("Social", "منصاتنا")}</h4>
-              <a href="https://www.instagram.com/change.adv/" target="_blank" rel="noopener noreferrer" className="hover:text-accent transition-colors font-medium">
-                Instagram
-              </a>
-              <a href="https://www.linkedin.com/company/change-adv" target="_blank" rel="noopener noreferrer" className="hover:text-accent transition-colors font-medium">
-                LinkedIn
-              </a>
-            </div>
-
-            <div className="col-span-2 md:col-span-1 flex flex-col gap-4">
-              <h4 className="font-bold text-white/50 uppercase tracking-widest text-sm mb-2">{t("Contact", "تواصل")}</h4>
-              <a href="mailto:info@change.sa" className="hover:text-accent transition-colors font-medium">info@change.sa</a>
-              <a href="tel:+966534060044" className="hover:text-accent transition-colors font-medium" dir="ltr">+966 53 406 0044</a>
-            </div>
+            </ul>
           </div>
+
+          <nav aria-label={t("Footer", "روابط التذييل")} className="md:col-span-2">
+            <h2 className={heading}>{t("Explore", "تصفح")}</h2>
+            <ul className="flex flex-col gap-3">
+              {navItems.map((item) => (
+                <li key={item.id}>
+                  <a href={`#${item.id}`} className={link}>
+                    {language === "en" ? item.en : item.ar}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          <div className="md:col-span-3">
+            <h2 className={heading}>{t("Services", "الخدمات")}</h2>
+            <ul className="flex flex-col gap-3">
+              {services.map((s) => (
+                <li key={s}>
+                  <a href="#services" className={link}>{s}</a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <address className="col-span-2 md:col-span-3 not-italic">
+            <h2 className={heading}>{t("Get in Touch", "تواصل")}</h2>
+            <ul className="flex flex-col gap-3">
+              <li>
+                <a href={`mailto:${CONTACT.email}`} className={link}>{CONTACT.email}</a>
+              </li>
+              <li>
+                <a href={`tel:${CONTACT.phone}`} className={link}>
+                  <bdi dir="ltr">{CONTACT.phoneDisplay}</bdi>
+                </a>
+              </li>
+              <li>
+                <a href={CONTACT.mapsUrl} target="_blank" rel="noopener noreferrer" className={link}>
+                  {CONTACT.address[language]}
+                </a>
+              </li>
+            </ul>
+          </address>
         </div>
 
-        <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4 text-white/40 text-sm font-light">
+        <div className="mt-16 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4 text-white/40 text-sm font-light">
           <p>
             {t(
-              `© ${new Date().getFullYear()} Change Advertising Agency. All Rights Reserved.`,
+              `© ${new Date().getFullYear()} Change Advertising Agency. All rights reserved.`,
               `© ${new Date().getFullYear()} وكالة تشينج للإعلان. جميع الحقوق محفوظة.`
             )}
           </p>
-          <div className="flex gap-6">
-            <a href="#" className="hover:text-white transition-colors">{t("Privacy Policy", "سياسة الخصوصية")}</a>
-            <a href="#" className="hover:text-white transition-colors">{t("Terms of Service", "شروط الخدمة")}</a>
-          </div>
+          <Link href={altHref} hrefLang={language === "en" ? "ar" : "en"} className="hover:text-white transition-colors">
+            {language === "en" ? "النسخة العربية" : "English version"}
+          </Link>
         </div>
       </div>
     </footer>

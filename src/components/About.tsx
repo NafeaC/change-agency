@@ -1,98 +1,137 @@
+import { useRef } from "react";
+import { motion, useScroll, useTransform } from "framer-motion";
+import { Target, BarChart3, MapPinned, Sparkles } from "lucide-react";
 import { useLanguage } from "../hooks/useLanguage";
-import { motion } from "framer-motion";
+
+const ease = [0.16, 1, 0.3, 1] as const;
+
+// A heading line that slides up from behind a mask. The parent heading
+// triggers it (the clipped line itself never registers as in view).
+function RevealLine({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
+  return (
+    <span className="block overflow-hidden pb-[0.08em]">
+      <motion.span
+        className={`block ${className}`}
+        variants={{ hidden: { y: "110%" }, show: { y: "0%", transition: { duration: 0.9, delay, ease } } }}
+      >
+        {children}
+      </motion.span>
+    </span>
+  );
+}
 
 export default function About() {
   const { t } = useLanguage();
+  const imgRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: imgRef, offset: ["start end", "end start"] });
+  const imgY = useTransform(scrollYProgress, [0, 1], ["-8%", "8%"]);
+
+  const pillars = [
+    { icon: Target, label: t("Strategy first", "الاستراتيجية أولًا") },
+    { icon: BarChart3, label: t("Data-driven", "قرارات بالبيانات") },
+    { icon: MapPinned, label: t("Local insight", "فهم للسوق المحلي") },
+    { icon: Sparkles, label: t("Results-led creativity", "إبداع بنتائج") },
+  ];
 
   return (
-    <section id="about" className="py-32 px-6 bg-white text-black">
-      <div className="max-w-7xl mx-auto">
+    <section id="about" className="py-24 md:py-32 px-6 bg-white text-black overflow-hidden">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-14 lg:gap-20 items-center">
+        {/* Copy */}
+        <div className="lg:col-span-6">
+          <motion.p
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="inline-flex items-center gap-3 text-xs font-bold uppercase tracking-[0.22em] text-accent-ink mb-6"
+          >
+            <span className="h-px w-8 bg-accent-ink" />
+            {t("About Change", "من نحن")}
+          </motion.p>
 
-        {/* — Madinah image banner — */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          className="relative rounded-2xl overflow-hidden mb-16 group"
-        >
-          <img
-            src="/about/madinah.jpg"
-            alt={t("Al-Masjid an-Nabawi, Al-Madinah", "المسجد النبوي، المدينة المنورة")}
-            className="w-full h-[260px] sm:h-[360px] md:h-[460px] object-cover transition-transform duration-700 group-hover:scale-105"
-            loading="lazy"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-          <div className="absolute bottom-6 left-6 sm:bottom-8 sm:left-8 text-white">
-            <p className="text-xs sm:text-sm uppercase tracking-widest text-accent font-bold mb-1">
-              {t("Home Base", "مقرنا")}
-            </p>
-            <p className="text-lg sm:text-2xl font-bold">
-              {t("Proudly rooted in Al-Madinah, KSA", "بفخر من المدينة المنورة، المملكة العربية السعودية")}
-            </p>
-          </div>
-        </motion.div>
+          <motion.h2
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-60px" }}
+            className="text-4xl sm:text-5xl font-bold tracking-tight leading-[1.05]"
+          >
+            <RevealLine>{t("We think business,", "نفكر بعقلية الأعمال،")}</RevealLine>
+            <RevealLine delay={0.12} className="text-accent">
+              {t("not just marketing.", "لا التسويق فقط.")}
+            </RevealLine>
+          </motion.h2>
 
-        <motion.div 
-          initial={{ opacity: 0, y: 50 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          className="grid grid-cols-1 lg:grid-cols-2 gap-16"
-        >
-          <div>
-            <h2 className="text-4xl md:text-6xl font-bold tracking-tighter uppercase mb-8">
-              {t("We Think Business,", "نفكر بأسلوب الأعمال،")}
-              <br />
-              <span className="text-accent">{t("Not Just Marketing", "ليس فقط التسويق")}</span>
-            </h2>
-            <p className="text-xl md:text-2xl text-black/70 font-light leading-relaxed">
-              {t(
-                "A full-service advertising agency headquartered in Al-Madinah, KSA. We've served businesses across the Kingdom since 2010, building marketing strategies rooted in market reality — not guesswork.",
-                "وكالة إعلانات متكاملة الخدمات مقرها المدينة المنورة، المملكة العربية السعودية. قدمنا خدماتنا للشركات في جميع أنحاء المملكة منذ عام 2010، حيث نبني استراتيجيات تسويقية تستند إلى واقع السوق — وليس التخمين."
-              )}
-            </p>
-            <p className="mt-6 text-base md:text-lg text-black/60 font-light leading-relaxed">
-              {t(
-                "Successful marketing doesn't start with advertising — it starts with understanding the project, the market, and the audience, then building a clear strategy that guides every step that follows. We partner with companies seeking sustainable growth that need a team thinking like a business, not just an execution unit.",
-                "التسويق الناجح لا يبدأ من الإعلان، بل من فهم المشروع والسوق والجمهور، ثم بناء استراتيجية واضحة تقود كل خطوة لاحقة. نعمل مع شركات ومشاريع تبحث عن نمو مستدام، وتحتاج فريقًا يفكّر بعقلية بزنس لا بعقلية تنفيذ فقط."
-              )}
-            </p>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.8, delay: 0.25, ease }}
+            className="mt-6 text-lg text-black/65 font-light leading-relaxed max-w-lg"
+          >
+            {t(
+              "A full-service agency from Al-Madinah. Since 2010 we have helped brands across the Kingdom grow with strategy built on market reality, not guesswork.",
+              "وكالة متكاملة من المدينة المنورة. منذ 2010 نساعد العلامات في أنحاء المملكة على النمو باستراتيجية مبنية على واقع السوق، لا على التخمين."
+            )}
+          </motion.p>
 
-            <div className="mt-12 grid grid-cols-2 gap-x-8 gap-y-6">
-              {[
-                t("Strategic Thinking", "التفكير الاستراتيجي"),
-                t("Data-Driven Decisions", "قرارات مبنية على البيانات"),
-                t("Local Market Expertise", "خبرة السوق المحلي"),
-                t("Results-Tied Creativity", "إبداع مرتبط بالنتائج")
-              ].map((pillar, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full bg-accent" />
-                  <span className="font-medium text-sm uppercase tracking-wide">{pillar}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          <ul className="mt-10 grid grid-cols-2 gap-3 max-w-lg">
+            {pillars.map(({ icon: Icon, label }, i) => (
+              <motion.li
+                key={label}
+                initial={{ opacity: 0, y: 16, scale: 0.96 }}
+                whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                viewport={{ once: true, margin: "-40px" }}
+                transition={{ duration: 0.5, delay: 0.35 + i * 0.08, ease }}
+                className="group flex items-center gap-3 rounded-2xl bg-neutral-100 px-4 py-3.5 hover:bg-black hover:text-white transition-colors duration-300"
+              >
+                <span className="w-9 h-9 shrink-0 rounded-xl bg-white text-accent-ink group-hover:bg-accent group-hover:text-black flex items-center justify-center transition-colors duration-300">
+                  <Icon className="w-[18px] h-[18px]" strokeWidth={1.75} aria-hidden="true" />
+                </span>
+                <span className="text-sm font-semibold leading-tight">{label}</span>
+              </motion.li>
+            ))}
+          </ul>
+        </div>
 
-          <div className="flex flex-col gap-8">
-            <div className="bg-black text-white p-10 lg:p-12">
-              <p className="text-xl leading-relaxed">
-                {t(
-                  "We work with companies seeking sustainable growth. 15+ years of market shifts taught us to separate what actually works from what's just noise.",
-                  "نعمل مع الشركات التي تبحث عن النمو المستدام. 15+ عاماً من تحولات السوق علمتنا أن نفصل بين ما ينجح فعلياً وبين ما هو مجرد ضجيج."
-                )}
-              </p>
-            </div>
-            
-            <div className="border border-black/10 p-10 lg:p-12 relative overflow-hidden">
-              <div className="text-6xl text-accent/20 absolute top-4 left-6 font-serif">"</div>
-              <p className="text-2xl font-light italic relative z-10 mt-6">
-                {t(
-                  "Our experience isn't measured in years — it's measured in the right decisions made at critical moments.",
-                  "خبرتنا لا تقاس بالسنوات — بل تقاس بالقرارات الصحيحة المتخذة في اللحظات الحاسمة."
-                )}
-              </p>
-            </div>
-          </div>
-        </motion.div>
+        {/* Image: clip reveal + parallax, with a floating badge */}
+        <div className="lg:col-span-6 relative">
+          <motion.div
+            ref={imgRef}
+            initial={{ clipPath: "inset(10% 10% 10% 10% round 28px)" }}
+            whileInView={{ clipPath: "inset(0% 0% 0% 0% round 28px)" }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 1.2, ease }}
+            className="relative aspect-[4/5] sm:aspect-[5/4] lg:aspect-[4/5] overflow-hidden rounded-[28px]"
+          >
+            <motion.img
+              style={{ y: imgY }}
+              src="/about/madinah.jpg"
+              alt={t("Al-Masjid an-Nabawi in Al-Madinah, home of Change Agency", "المسجد النبوي في المدينة المنورة، مقر وكالة تشينج")}
+              width={1400}
+              height={1050}
+              loading="lazy"
+              decoding="async"
+              className="absolute inset-0 w-full h-[116%] -top-[8%] object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+            <p className="absolute bottom-6 start-6 text-white text-lg sm:text-xl font-bold">
+              {t("Rooted in Al-Madinah", "من قلب المدينة المنورة")}
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, delay: 0.5, ease }}
+            className="absolute -bottom-6 end-4 sm:end-6 lg:-end-6 rounded-2xl bg-black text-white px-6 py-5 shadow-2xl shadow-black/30"
+          >
+            <p className="text-3xl font-bold text-accent">
+              <bdi dir="ltr">2010</bdi>
+            </p>
+            <p className="text-xs text-white/60 mt-1">{t("Building brands since", "نبني العلامات منذ")}</p>
+          </motion.div>
+        </div>
       </div>
     </section>
   );
