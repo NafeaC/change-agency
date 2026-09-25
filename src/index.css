@@ -45,6 +45,7 @@
   --font-sans: var(--app-font-sans);
   --font-arabic: var(--app-font-arabic);
   --font-display: var(--app-font-display);
+  --font-mono: var(--app-font-mono);
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -84,17 +85,19 @@
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
 
-  --app-font-sans: 'Inter', system-ui, sans-serif;
-  --app-font-display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
-  --app-font-arabic: 'IBM Plex Sans Arabic', 'Inter', system-ui, sans-serif;
+  /* IBM Plex family across the site. */
+  --app-font-sans: 'IBM Plex Sans', 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  --app-font-display: 'IBM Plex Sans', 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  --app-font-arabic: 'IBM Plex Sans Arabic', 'IBM Plex Sans', system-ui, sans-serif;
+  --app-font-mono: 'IBM Plex Mono', ui-monospace, monospace;
   
   --radius: 0rem;
 }
 
-/* Arabic pages: Alexandria for headlines, IBM Plex Sans Arabic for text. */
+/* Arabic pages: IBM Plex Sans Arabic for headlines and text. */
 html[dir="rtl"] {
-  --app-font-sans: 'IBM Plex Sans Arabic', 'Inter', system-ui, sans-serif;
-  --app-font-display: 'Alexandria', 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  --app-font-sans: 'IBM Plex Sans Arabic', 'IBM Plex Sans', system-ui, sans-serif;
+  --app-font-display: 'IBM Plex Sans Arabic', 'IBM Plex Sans', system-ui, sans-serif;
 }
 
 .dark {
