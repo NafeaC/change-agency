@@ -1,8 +1,35 @@
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useLanguage } from "../hooks/useLanguage";
 import { motion } from "framer-motion";
 import { ArrowRight, ArrowLeft, Mail, Phone, MapPin } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
 import { CONTACT } from "@/lib/site";
+
+const LogoMark3D = lazy(() => import("./three/LogoMark3D"));
+
+// Mounts the 3D brand mark once the section approaches the viewport.
+function BrandMark() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const io = new IntersectionObserver(([e]) => e.isIntersecting && setShow(true), { rootMargin: "300px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  return (
+    <div ref={ref} aria-hidden="true" className="w-full h-full">
+      {show ? (
+        <Suspense fallback={null}>
+          <LogoMark3D />
+        </Suspense>
+      ) : (
+        <img src="/favicon.svg" alt="" className="w-1/2 h-1/2 m-auto mt-[25%] opacity-30 brightness-0" />
+      )}
+    </div>
+  );
+}
 
 export default function CTA() {
   const { t, dir, language } = useLanguage();
@@ -48,6 +75,9 @@ export default function CTA() {
             transition={{ duration: 0.7, delay: 0.15 }}
             className="lg:col-span-5"
           >
+            <div className="hidden md:block w-56 h-56 lg:w-64 lg:h-64 -mt-6 mb-2 -ms-6">
+              <BrandMark />
+            </div>
             <p className="text-lg md:text-xl font-medium leading-relaxed text-black/75">
               {t(
                 "No templates. No guesswork. Just a real conversation to understand your business and map the first step together.",

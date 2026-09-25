@@ -10,6 +10,10 @@ import FAQ from "../components/FAQ";
 import CTA from "../components/CTA";
 import Footer from "../components/Footer";
 import WhatsAppFab from "../components/WhatsAppFab";
+import Ticker from "../components/Ticker";
+import Reels from "../components/Reels";
+import SmoothScroll from "../components/SmoothScroll";
+import ScrollProgress from "../components/ScrollProgress";
 import { useLanguage } from "../hooks/useLanguage";
 
 export default function Home() {
@@ -23,11 +27,15 @@ export default function Home() {
       >
         {t("Skip to content", "تخطَّ إلى المحتوى")}
       </a>
+      <SmoothScroll />
+      <ScrollProgress />
       <Nav />
       <main id="main" className="flex-1 w-full">
         <Hero />
+        <Ticker />
         <About />
         <Services />
+        <Reels />
         <Portfolio />
         <Process />
         <WhyChange />

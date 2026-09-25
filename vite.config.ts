@@ -18,5 +18,7 @@ export default defineConfig({
   build: {
     outDir: "dist",
     emptyOutDir: true,
+    // The 3D scene (three.js) is a lazily loaded chunk of ~1 MB.
+    chunkSizeWarningLimit: 1200,
   },
 });

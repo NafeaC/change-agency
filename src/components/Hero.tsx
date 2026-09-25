@@ -1,157 +1,282 @@
+import { Component, lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
+import { motion, useScroll, useTransform, AnimatePresence, useInView } from "framer-motion";
+import { ArrowRight, ArrowLeft, Play } from "lucide-react";
 import { useLanguage } from "../hooks/useLanguage";
-import { ArrowRight, ArrowLeft, MapPin } from "lucide-react";
-import { CONTACT, PROFILE_DECK_URL } from "@/lib/site";
+import { CONTACT } from "@/lib/site";
+import Magnetic from "./Magnetic";
 
-// Staggered delay helper for the CSS entrance animations.
+// three.js is heavy — load the 3D scene only in the browser, after first paint.
+const MasjidScene = lazy(() => import("./three/MasjidScene"));
+
 const delay = (s: number) => ({ animationDelay: `${s}s` });
 
-const collage = [
-  { src: "/work/dynamite-shrimp-ad.jpg", w: 669, h: 831, en: "Havens digital marketing campaign", ar: "حملة تسويق رقمي لـ Havens" },
-  { src: "/work/rasia-branding.jpg", w: 1288, h: 851, en: "Rasia Luxury Hotel brand identity", ar: "هوية فندق راسيا الفاخر" },
-  { src: "/work/taiba-booth.jpg", w: 1003, h: 744, en: "Taiba Investments exhibition booth", ar: "جناح طيبة للاستثمار في المعرض" },
-  { src: "/work/rasia-hotel.jpg", w: 1059, h: 1080, en: "Rasia Luxury Hotel photography", ar: "تصوير فندق راسيا الفاخر" },
-];
+function hasWebGL() {
+  try {
+    const c = document.createElement("canvas");
+    return !!(c.getContext("webgl2") || c.getContext("webgl"));
+  } catch {
+    return false;
+  }
+}
+
+// If WebGL or the 3D bundle fails for any reason, keep the static poster.
+class SceneBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  render() {
+    return this.state.failed ? null : this.props.children;
+  }
+}
+
+// Rotating last word of the headline.
+function RotatingWord({ words }: { words: string[] }) {
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setI((n) => (n + 1) % words.length), 2600);
+    return () => clearInterval(id);
+  }, [words.length]);
+
+  return (
+    <span className="relative inline-grid overflow-hidden align-bottom pb-[0.12em]">
+      {/* invisible copies reserve the width of the longest word */}
+      {words.map((w) => (
+        <span key={w} className="invisible col-start-1 row-start-1" aria-hidden="true">
+          {w}
+        </span>
+      ))}
+      <AnimatePresence mode="popLayout" initial={false}>
+        <motion.span
+          key={words[i]}
+          className="col-start-1 row-start-1 text-accent"
+          initial={{ y: "100%", opacity: 0 }}
+          animate={{ y: "0%", opacity: 1 }}
+          exit={{ y: "-100%", opacity: 0 }}
+          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+        >
+          {words[i]}
+        </motion.span>
+      </AnimatePresence>
+    </span>
+  );
+}
+
+function CountUp({ to, suffix = "" }: { to: number; suffix?: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true });
+  const [n, setN] = useState(to);
+  useEffect(() => {
+    if (!inView) return;
+    let raf = 0;
+    const start = performance.now();
+    const step = (now: number) => {
+      const p = Math.min((now - start) / 1800, 1);
+      setN(Math.round(to * (1 - Math.pow(1 - p, 3))));
+      if (p < 1) raf = requestAnimationFrame(step);
+    };
+    setN(0);
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [inView, to]);
+  return (
+    <span ref={ref}>
+      <bdi dir="ltr">
+        {n}
+        {suffix}
+      </bdi>
+    </span>
+  );
+}
 
 export default function Hero() {
   const { t, dir } = useLanguage();
   const Arrow = dir === "rtl" ? ArrowLeft : ArrowRight;
+  const ref = useRef<HTMLElement>(null);
+
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
+  const contentY = useTransform(scrollYProgress, [0, 1], ["0%", "35%"]);
+  const contentOpacity = useTransform(scrollYProgress, [0, 0.7], [1, 0]);
+
+  // Client-only state for the 3D layer.
+  const [three, setThree] = useState<{ on: boolean; lowPower: boolean; wide: boolean }>({
+    on: false,
+    lowPower: false,
+    wide: true,
+  });
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const wideMq = window.matchMedia("(min-width: 1024px)");
+    const lowPower = !wideMq.matches || (navigator.hardwareConcurrency || 8) <= 4;
+    setThree({ on: !reduce && hasWebGL(), lowPower, wide: wideMq.matches });
+    const onChange = () => setThree((s) => ({ ...s, wide: wideMq.matches }));
+    wideMq.addEventListener("change", onChange);
+    return () => wideMq.removeEventListener("change", onChange);
+  }, []);
+
+  // Stop rendering the 3D scene when the hero is off-screen.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([e]) => setVisible(e.isIntersecting), { threshold: 0 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  const shift = three.wide ? (dir === "rtl" ? -0.2 : 0.2) : 0;
+
+  const words =
+    dir === "rtl" ? ["تنمو", "تتصدّر", "تُلهم", "تبيع"] : ["grow", "lead", "sell", "last"];
 
   const stats = [
-    { value: "700+", label: t("Brands served", "علامة تجارية") },
-    { value: "15+",  label: t("Years in the market", "عامًا في السوق") },
-    { value: "20+",  label: t("Long-term partners", "شريك طويل الأمد") },
-    { value: "5+",   label: t("Market sectors", "قطاعات السوق") },
+    { to: 700, suffix: "+", label: t("Brands served", "علامة تجارية") },
+    { to: 15, suffix: "+", label: t("Years in the market", "عامًا في السوق") },
+    { to: 20, suffix: "+", label: t("Long-term partners", "شريك طويل الأمد") },
+    { to: 5, suffix: "+", label: t("Market sectors", "قطاعات السوق") },
   ];
 
   return (
     <section
+      ref={ref}
       id="top"
-      className="relative min-h-[100dvh] flex flex-col px-6 pt-28 pb-10 noise-bg overflow-hidden bg-black text-white"
+      className="relative h-[100svh] min-h-[680px] overflow-hidden bg-[#050403] text-white"
     >
-      {/* Backdrop */}
-      <div className="absolute inset-0 grid-bg [mask-image:radial-gradient(ellipse_at_30%_40%,black_20%,transparent_75%)] pointer-events-none" />
-      <div className="absolute top-1/4 start-[10%] w-[55vw] h-[45vh] bg-accent/15 rounded-full blur-[130px] pointer-events-none" />
-
-      <div className="max-w-7xl w-full mx-auto flex flex-col flex-1 justify-between relative z-10">
-        <div className="grid lg:grid-cols-12 gap-12 items-center flex-1">
-          {/* — Copy — */}
-          <div className="lg:col-span-7">
-            <p
-              className="anim-fade-up inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-[11px] sm:text-sm text-white/80"
-              style={delay(0.05)}
+      {/* — 3D scene (poster first, live WebGL once loaded) — */}
+      <div className="absolute inset-0">
+        <img
+          src="/hero/masjid-3d.jpg"
+          alt=""
+          aria-hidden="true"
+          width={2400}
+          height={1350}
+          fetchPriority="high"
+          className={`absolute inset-0 w-full h-full object-cover ${
+            dir === "rtl" ? "object-[30%_50%] lg:object-[20%_50%]" : "object-[70%_50%] lg:object-[80%_50%]"
+          }`}
+        />
+        {three.on && (
+          <SceneBoundary>
+          <Suspense fallback={null}>
+            <motion.div
+              className="absolute inset-0"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 1.2, delay: 0.2 }}
             >
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full rounded-full bg-accent opacity-75 animate-ping" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
-              </span>
-              <MapPin className="hidden sm:block w-3.5 h-3.5 text-accent" aria-hidden="true" />
-              {t("Advertising & Marketing Agency · Al-Madinah, KSA", "وكالة إعلان وتسويق · المدينة المنورة")}
-            </p>
+              <MasjidScene scroll={scrollYProgress} shift={shift} paused={!visible} lowPower={three.lowPower} />
+            </motion.div>
+          </Suspense>
+          </SceneBoundary>
+        )}
+      </div>
 
-            <h1
-              className="mt-7 font-bold tracking-tighter leading-[0.92] uppercase"
-              style={{ fontSize: "clamp(2.75rem, 7.2vw, 6.75rem)" }}
-            >
-              <span className="block overflow-hidden">
-                <span className="anim-rise" style={delay(0.15)}>{t("We Build", "نبني")}</span>
+      {/* — Legibility overlays — */}
+      <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-[#050403] via-transparent to-[#050403]/60" />
+      <div
+        className={`absolute inset-0 pointer-events-none ${
+          dir === "rtl"
+            ? "bg-gradient-to-l from-[#050403]/95 via-[#050403]/55 lg:via-[#050403]/40 to-transparent"
+            : "bg-gradient-to-r from-[#050403]/95 via-[#050403]/55 lg:via-[#050403]/40 to-transparent"
+        }`}
+      />
+      <div className="absolute inset-0 bg-[#050403]/45 lg:bg-transparent pointer-events-none" />
+      <div className="absolute inset-0 noise-bg pointer-events-none" />
+
+      {/* — Content — */}
+      <motion.div
+        style={{ y: contentY, opacity: contentOpacity }}
+        className="relative z-10 h-full max-w-7xl mx-auto px-6 flex flex-col justify-end pb-8 pt-28 pointer-events-none"
+      >
+        <div className="max-w-3xl pointer-events-auto">
+          <p
+            className="anim-fade-up inline-flex items-center gap-2.5 rounded-full border border-white/15 bg-black/40 backdrop-blur-md px-4 py-2 text-[11px] sm:text-sm text-white/85"
+            style={delay(0.1)}
+          >
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-accent opacity-75 animate-ping" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
+            </span>
+            {t("Advertising & Marketing Agency · Al-Madinah, KSA", "وكالة إعلان وتسويق · المدينة المنورة")}
+          </p>
+
+          <h1
+            className="mt-6 font-bold tracking-tighter leading-[0.95] uppercase"
+            style={{ fontSize: dir === "rtl" ? "clamp(2.6rem, 6.4vw, 5.9rem)" : "clamp(2.9rem, 7.4vw, 7rem)" }}
+          >
+            <span className="block overflow-hidden">
+              <span className="anim-rise" style={delay(0.2)}>
+                {t("We build brands", "نبني علامات")}
               </span>
-              <span className="block overflow-hidden">
-                <span className="anim-rise" style={delay(0.27)}>{t("Brands", "علامات تجارية")}</span>
-              </span>
-              {/* pb-3 keeps italic descenders ("g") from being clipped */}
-              <span className="block overflow-hidden pb-3 text-accent">
-                <span className="anim-rise italic font-light lowercase tracking-normal" style={delay(0.4)}>
-                  {t("that grow", "تنمو")}
+            </span>
+            <span className="block overflow-hidden whitespace-nowrap">
+              <span className="anim-rise" style={delay(0.34)}>
+                {t("that ", "تجارية ")}
+                <span className="sr-only">{words[0]}</span>
+                <span aria-hidden="true">
+                  <RotatingWord key={dir} words={words} />
                 </span>
               </span>
-            </h1>
+            </span>
+          </h1>
 
-            <p
-              className="anim-fade-up mt-6 text-base md:text-lg text-white/65 font-light leading-relaxed max-w-xl"
-              style={delay(0.6)}
-            >
-              {t(
-                "Strategic partner for ambitious businesses in Saudi Arabia. Branding, digital marketing, production and on-ground execution — all under one roof since 2010.",
-                "شريك استراتيجي للشركات الطموحة في المملكة. هوية تجارية، تسويق رقمي، إنتاج، وتنفيذ ميداني — كل شيء تحت سقف واحد منذ 2010."
-              )}
-            </p>
+          <p
+            className="anim-fade-up mt-6 text-base md:text-lg text-white/70 font-light leading-relaxed max-w-xl"
+            style={delay(0.55)}
+          >
+            {t(
+              "From the heart of Al-Madinah — strategy, content, production and on-ground execution for ambitious brands across Saudi Arabia since 2010.",
+              "من قلب المدينة المنورة — استراتيجية، محتوى، إنتاج وتنفيذ ميداني للعلامات الطموحة في أنحاء المملكة منذ 2010."
+            )}
+          </p>
 
-            <div className="anim-fade-up mt-9 flex flex-wrap gap-3" style={delay(0.75)}>
+          <div className="anim-fade-up mt-8 flex flex-wrap items-center gap-3" style={delay(0.7)}>
+            <Magnetic>
               <a
                 href={CONTACT.whatsapp}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group inline-flex items-center gap-2 bg-accent text-black px-6 py-3.5 rounded-full font-bold text-sm hover:bg-white transition-colors duration-300"
+                className="group inline-flex items-center gap-2 bg-accent text-black px-7 py-4 rounded-full font-bold text-sm hover:bg-white transition-colors duration-300 shadow-[0_0_40px_-8px_rgb(245_166_35/0.7)]"
               >
                 {t("Start Your Project", "ابدأ مشروعك")}
                 <Arrow className="w-4 h-4 transition-transform group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" />
               </a>
-              <a
-                href={PROFILE_DECK_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full font-semibold text-sm border border-white/25 hover:border-white hover:bg-white/5 transition-colors duration-300"
-              >
-                {t("View Company Profile", "الملف التعريفي")}
-              </a>
-            </div>
-          </div>
-
-          {/* — Work collage (desktop) — */}
-          <div className="hidden lg:block lg:col-span-5">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-4 pt-10">
-                {[collage[0], collage[2]].map((img, i) => (
-                  <figure
-                    key={img.src}
-                    className="anim-fade-up overflow-hidden rounded-2xl ring-1 ring-white/10 bg-white/5"
-                    style={delay(0.5 + i * 0.15)}
-                  >
-                    <img
-                      src={img.src}
-                      alt={t(img.en, img.ar)}
-                      width={img.w}
-                      height={img.h}
-                      fetchPriority={i === 0 ? "high" : "auto"}
-                      className={`w-full object-cover ${i === 0 ? "aspect-[4/5]" : "aspect-[4/3]"}`}
-                    />
-                  </figure>
-                ))}
-              </div>
-              <div className="flex flex-col gap-4">
-                {[collage[1], collage[3]].map((img, i) => (
-                  <figure
-                    key={img.src}
-                    className="anim-fade-up overflow-hidden rounded-2xl ring-1 ring-white/10 bg-white/5"
-                    style={delay(0.6 + i * 0.15)}
-                  >
-                    <img
-                      src={img.src}
-                      alt={t(img.en, img.ar)}
-                      width={img.w}
-                      height={img.h}
-                      className={`w-full object-cover ${i === 0 ? "aspect-[4/3]" : "aspect-[4/5]"}`}
-                    />
-                  </figure>
-                ))}
-              </div>
-            </div>
+            </Magnetic>
+            <a
+              href="#reels"
+              className="group inline-flex items-center gap-3 ps-2 pe-6 py-2 rounded-full font-semibold text-sm border border-white/20 bg-white/5 backdrop-blur-md hover:border-white/60 transition-colors duration-300"
+            >
+              <span className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Play className="w-4 h-4 fill-current rtl:-scale-x-100" />
+              </span>
+              {t("Watch Our Reels", "شاهد أعمالنا")}
+            </a>
           </div>
         </div>
 
-        {/* — Stats row — */}
-        <dl
-          className="anim-fade-up w-full grid grid-cols-2 sm:grid-cols-4 gap-6 border-t border-white/10 pt-7 mt-12"
-          style={delay(0.95)}
+        {/* — Stats + scene caption — */}
+        <div
+          className="anim-fade-up mt-12 pt-6 border-t border-white/10 flex flex-col lg:flex-row lg:items-end justify-between gap-6 pointer-events-auto"
+          style={delay(0.9)}
         >
-          {stats.map((stat) => (
-            <div key={stat.label} className="flex flex-col-reverse">
-              <dt className="text-white/45 text-xs sm:text-sm mt-1.5 font-light">{stat.label}</dt>
-              <dd className="text-3xl md:text-4xl font-bold tracking-tight">{stat.value}</dd>
-            </div>
-          ))}
-        </dl>
-      </div>
+          <dl className="grid grid-cols-4 gap-4 sm:gap-10">
+            {stats.map((s) => (
+              <div key={s.label} className="flex flex-col-reverse">
+                <dt className="text-white/50 text-[10px] sm:text-xs mt-1 font-light leading-tight">{s.label}</dt>
+                <dd className="font-display text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">
+                  <CountUp to={s.to} suffix={s.suffix} />
+                </dd>
+              </div>
+            ))}
+          </dl>
+          <p className="hidden lg:flex items-center gap-3 text-[11px] uppercase tracking-[0.2em] text-white/45">
+            <span className="h-px w-10 bg-accent/60" />
+            {t("Al-Masjid an-Nabawi", "المسجد النبوي")} · <bdi dir="ltr" className="font-mono">24.4672° N, 39.6111° E</bdi>
+          </p>
+        </div>
+      </motion.div>
+
     </section>
   );
 }

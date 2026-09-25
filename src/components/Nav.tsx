@@ -8,8 +8,8 @@ import { CONTACT, LOGO_WHITE } from "@/lib/site";
 export const navItems = [
   { en: "About",      ar: "من نحن",       id: "about"    },
   { en: "Services",   ar: "خدماتنا",      id: "services" },
+  { en: "Reels",      ar: "الريلز",       id: "reels"    },
   { en: "Work",       ar: "أعمالنا",      id: "work"     },
-  { en: "Why Change", ar: "لماذا تشينج؟", id: "why"      },
   { en: "FAQ",        ar: "الأسئلة الشائعة", id: "faq"   },
 ];
 

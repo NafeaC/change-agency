@@ -2,6 +2,7 @@ import { useLanguage } from "../hooks/useLanguage";
 import { motion } from "framer-motion";
 import { TrendingUp, Clapperboard, Printer, Check } from "lucide-react";
 import SectionHeading from "./SectionHeading";
+import Tilt from "./Tilt";
 
 export default function Services() {
   const { t } = useLanguage();
@@ -84,13 +85,16 @@ export default function Services() {
           {services.map((service, i) => {
             const Icon = service.icon;
             return (
-              <motion.article
+              <motion.div
                 key={i}
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 40 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-50px" }}
-                transition={{ delay: i * 0.12, duration: 0.6 }}
-                className="group relative rounded-2xl border border-white/10 bg-white/[0.03] p-8 md:p-10 flex flex-col hover:border-accent/60 hover:bg-white/[0.06] transition-colors duration-500"
+                transition={{ delay: i * 0.12, duration: 0.7 }}
+              >
+              <Tilt max={6} className="h-full">
+              <article
+                className="group relative h-full rounded-2xl border border-white/10 bg-white/[0.03] p-8 md:p-10 flex flex-col hover:border-accent/60 hover:bg-white/[0.06] transition-colors duration-500"
               >
                 <div className="flex items-center justify-between mb-10">
                   <span className="w-12 h-12 rounded-xl bg-accent text-black flex items-center justify-center">
@@ -114,7 +118,9 @@ export default function Services() {
                     </li>
                   ))}
                 </ul>
-              </motion.article>
+              </article>
+              </Tilt>
+              </motion.div>
             );
           })}
         </div>
@@ -139,7 +145,7 @@ export default function Services() {
             {results.map((stat) => (
               <div key={stat.label} className="flex flex-col-reverse sm:border-s sm:border-black/15 sm:ps-6">
                 <dt className="text-xs font-bold uppercase tracking-widest mt-2 opacity-70">{stat.label}</dt>
-                <dd className="text-4xl xl:text-5xl font-bold tracking-tighter whitespace-nowrap"><bdi>{stat.val}</bdi></dd>
+                <dd className="font-display text-3xl xl:text-4xl font-bold tracking-tighter whitespace-nowrap"><bdi>{stat.val}</bdi></dd>
               </div>
             ))}
           </dl>
