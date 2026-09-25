@@ -99,21 +99,30 @@ export default function Hero() {
   const contentOpacity = useTransform(scrollYProgress, [0, 0.7], [1, 0]);
 
   // Client-only state for the 3D layer.
-  const [three, setThree] = useState<{ on: boolean; lowPower: boolean; wide: boolean }>({
+  const [three, setThree] = useState<{ on: boolean; lowPower: boolean; wide: boolean; xl: boolean }>({
     on: false,
     lowPower: false,
     wide: true,
+    xl: true,
   });
   const [visible, setVisible] = useState(true);
+  const [sceneReady, setSceneReady] = useState(false);
+  const [checked, setChecked] = useState(false);
 
   useEffect(() => {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const wideMq = window.matchMedia("(min-width: 1024px)");
     const lowPower = !wideMq.matches || (navigator.hardwareConcurrency || 8) <= 4;
-    setThree({ on: !reduce && hasWebGL(), lowPower, wide: wideMq.matches });
-    const onChange = () => setThree((s) => ({ ...s, wide: wideMq.matches }));
+    const xlMq = window.matchMedia("(min-width: 1280px)");
+    setThree({ on: !reduce && hasWebGL(), lowPower, wide: wideMq.matches, xl: xlMq.matches });
+    setChecked(true);
+    const onChange = () => setThree((s) => ({ ...s, wide: wideMq.matches, xl: xlMq.matches }));
     wideMq.addEventListener("change", onChange);
-    return () => wideMq.removeEventListener("change", onChange);
+    xlMq.addEventListener("change", onChange);
+    return () => {
+      wideMq.removeEventListener("change", onChange);
+      xlMq.removeEventListener("change", onChange);
+    };
   }, []);
 
   // Stop rendering the 3D scene when the hero is off-screen.
@@ -125,7 +134,9 @@ export default function Hero() {
     return () => io.disconnect();
   }, []);
 
-  const shift = three.wide ? (dir === "rtl" ? -0.2 : 0.2) : 0;
+  // push the model further aside on narrower desktops so it clears the headline
+  const side = three.xl ? 0.2 : 0.26;
+  const shift = three.wide ? (dir === "rtl" ? -side : side) : 0;
 
   const words =
     dir === "rtl" ? ["تنمو", "تتصدّر", "تُلهم", "تبيع"] : ["grow", "lead", "sell", "last"];
@@ -141,33 +152,51 @@ export default function Hero() {
     <section
       ref={ref}
       id="top"
-      className="relative h-[100svh] min-h-[680px] overflow-hidden bg-[#050403] text-white"
+      className="relative min-h-[100svh] overflow-hidden bg-[#050403] text-white"
     >
       {/* — 3D scene (poster first, live WebGL once loaded) — */}
       <div className="absolute inset-0">
-        <img
-          src="/hero/masjid-3d.jpg"
-          alt=""
+        {/* Soft amber glow behind the monument (the 3D canvas is transparent) */}
+        <div
           aria-hidden="true"
-          width={2400}
-          height={1350}
-          fetchPriority="high"
-          className={`absolute inset-0 w-full h-full object-cover ${
-            dir === "rtl" ? "object-[30%_50%] lg:object-[20%_50%]" : "object-[70%_50%] lg:object-[80%_50%]"
+          className={`absolute inset-0 bg-[radial-gradient(ellipse_70%_40%_at_50%_24%,rgb(245_166_35/0.22),transparent_70%)] ${
+            dir === "rtl"
+              ? "lg:bg-[radial-gradient(ellipse_45%_60%_at_28%_45%,rgb(245_166_35/0.22),transparent_70%)]"
+              : "lg:bg-[radial-gradient(ellipse_45%_60%_at_72%_45%,rgb(245_166_35/0.22),transparent_70%)]"
           }`}
         />
+        {/* Static render of the same scene: only used when live 3D can't run
+            (no WebGL / reduced motion), so the two never overlap or jump. */}
+        <picture className={`transition-opacity duration-700 ${checked && !three.on ? "opacity-100" : "opacity-0"}`}>
+          <source
+            media="(min-width: 1024px)"
+            srcSet={dir === "rtl" ? "/hero/masjid-rtl.jpg" : "/hero/masjid-ltr.jpg"}
+          />
+          <img
+            src="/hero/masjid-mobile.jpg"
+            alt=""
+            aria-hidden="true"
+            fetchPriority="high"
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        </picture>
         {three.on && (
           <SceneBoundary>
-          <Suspense fallback={null}>
-            <motion.div
-              className="absolute inset-0"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 1.2, delay: 0.2 }}
-            >
-              <MasjidScene scroll={scrollYProgress} shift={shift} paused={!visible} lowPower={three.lowPower} />
-            </motion.div>
-          </Suspense>
+            <Suspense fallback={null}>
+              <div
+                className={`absolute inset-0 transition-[opacity,transform] duration-[1400ms] ease-out ${
+                  sceneReady ? "opacity-100 scale-100" : "opacity-0 scale-[1.03]"
+                }`}
+              >
+                <MasjidScene
+                  scroll={scrollYProgress}
+                  shift={shift}
+                  paused={!visible}
+                  lowPower={three.lowPower}
+                  onReady={() => setSceneReady(true)}
+                />
+              </div>
+            </Suspense>
           </SceneBoundary>
         )}
       </div>
@@ -187,7 +216,7 @@ export default function Hero() {
       {/* — Content — */}
       <motion.div
         style={{ y: contentY, opacity: contentOpacity }}
-        className="relative z-10 h-full max-w-7xl mx-auto px-6 flex flex-col justify-end pb-8 pt-28 pointer-events-none"
+        className="relative z-10 min-h-[100svh] max-w-7xl mx-auto px-6 flex flex-col justify-end pb-8 pt-28 pointer-events-none"
       >
         <div className="max-w-3xl pointer-events-auto">
           <p
