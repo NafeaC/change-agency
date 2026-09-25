@@ -181,7 +181,7 @@ export default function Hero() {
             : "bg-gradient-to-r from-[#050403]/95 via-[#050403]/55 lg:via-[#050403]/40 to-transparent"
         }`}
       />
-      <div className="absolute inset-0 bg-[#050403]/45 lg:bg-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-[#050403]/20 lg:bg-transparent pointer-events-none" />
       <div className="absolute inset-0 noise-bg pointer-events-none" />
 
       {/* — Content — */}

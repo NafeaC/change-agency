@@ -1,459 +1,555 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Stylised 3D model of Al-Masjid an-Nabawi (the Prophet's Mosque, Al-Madinah)
-// built procedurally in the Change identity: black stone, glowing amber
-// arches and outlines, the iconic Green Dome, lit minarets and the courtyard
-// umbrellas. Rendered with react-three-fiber; loaded lazily on the client.
+// Premium 3D centrepiece: the Green Dome and a minaret of Al-Masjid an-Nabawi.
+// White marble, polished gold and a ribbed emerald dome, lit like a studio
+// product shot on Change black, standing on a reflective floor.
+// Built procedurally with react-three-fiber; loaded lazily on the client.
 // ─────────────────────────────────────────────────────────────────────────────
-import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Environment, Lightformer, MeshReflectorMaterial, Sparkles } from "@react-three/drei";
 import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing";
 import type { MotionValue } from "framer-motion";
 import * as THREE from "three";
 
-const AMBER = new THREE.Color("#F5A623");
-const GOLD = new THREE.Color("#ffc766");
-
-// Building blocks of the mosque footprint: [x1, z1, x2, z2]. The gaps between
-// them form the two inner courtyards.
-const BLOCKS: [number, number, number, number][] = [
-  [-7, -9, -3, 9],   // west wing
-  [3, -9, 7, 9],     // east wing
-  [-3, -9, 3, -6],   // north strip
-  [-3, -1.5, 3, 1.5],// middle
-  [-3, 5, 3, 9],     // south (qibla) strip
-];
-const BUILDING_H = 1.3;
-const GREEN_DOME: [number, number] = [1.6, 6.9];
-
-// Minaret positions around the complex.
-const MINARETS: [number, number, number][] = [
-  // x, z, scale
-  [-7.4, -9.4, 1],
-  [7.4, -9.4, 1],
-  [-7.4, 9.4, 1],
-  [7.4, 9.4, 1],
-  [-2.6, 9.5, 0.92],
-  [-3.2, -9.5, 0.85],
-  [3.2, -9.5, 0.85],
-];
-
-// ── Procedural textures ─────────────────────────────────────────────────────
-function makeArchTexture() {
+// ── Materials ───────────────────────────────────────────────────────────────
+function marbleTexture() {
   const c = document.createElement("canvas");
-  c.width = 128;
+  c.width = c.height = 512;
+  const g = c.getContext("2d")!;
+  g.fillStyle = "#f2efe9";
+  g.fillRect(0, 0, 512, 512);
+  // soft cloudy patches
+  for (let i = 0; i < 40; i++) {
+    const x = Math.random() * 512, y = Math.random() * 512, r = 40 + Math.random() * 120;
+    const grd = g.createRadialGradient(x, y, 0, x, y, r);
+    grd.addColorStop(0, "rgba(205,200,192,0.25)");
+    grd.addColorStop(1, "rgba(205,200,192,0)");
+    g.fillStyle = grd;
+    g.fillRect(0, 0, 512, 512);
+  }
+  // grey veins
+  for (let v = 0; v < 14; v++) {
+    g.strokeStyle = `rgba(120,118,112,${0.12 + Math.random() * 0.25})`;
+    g.lineWidth = 0.6 + Math.random() * 1.6;
+    g.beginPath();
+    let x = Math.random() * 512, y = Math.random() * 512;
+    g.moveTo(x, y);
+    for (let s = 0; s < 18; s++) {
+      x += (Math.random() - 0.3) * 40;
+      y += (Math.random() - 0.5) * 40;
+      g.lineTo(x, y);
+    }
+    g.stroke();
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.anisotropy = 8;
+  return t;
+}
+
+// Gold chevron band (the zig-zag section of the minaret).
+function chevronTexture() {
+  const c = document.createElement("canvas");
+  c.width = 256;
+  c.height = 256;
+  const g = c.getContext("2d")!;
+  g.fillStyle = "#f4efe6";
+  g.fillRect(0, 0, 256, 256);
+  g.strokeStyle = "#c9962e";
+  g.lineWidth = 16;
+  g.lineJoin = "miter";
+  for (let y = -32; y < 300; y += 48) {
+    g.beginPath();
+    for (let x = 0; x <= 256; x += 32) g.lineTo(x, y + ((x / 32) % 2 === 0 ? 0 : 20));
+    g.stroke();
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(3, 1.5);
+  return t;
+}
+
+// Green drum band with arched windows glowing warm from inside.
+function drumTexture() {
+  const c = document.createElement("canvas");
+  c.width = 1024;
   c.height = 128;
   const g = c.getContext("2d")!;
-  g.fillStyle = "#17120d";
-  g.fillRect(0, 0, 128, 128);
-  // Arched opening with a warm, lit interior.
-  const grad = g.createLinearGradient(0, 30, 0, 118);
-  grad.addColorStop(0, "#ffe2a6");
-  grad.addColorStop(1, "#f5a623");
-  g.fillStyle = grad;
-  g.beginPath();
-  g.moveTo(34, 118);
-  g.lineTo(34, 62);
-  g.quadraticCurveTo(34, 30, 64, 22);
-  g.quadraticCurveTo(94, 30, 94, 62);
-  g.lineTo(94, 118);
-  g.closePath();
-  g.fill();
-  // Cornice line.
-  g.fillStyle = "#3a2c1a";
-  g.fillRect(0, 0, 128, 8);
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.wrapS = THREE.RepeatWrapping;
-  tex.anisotropy = 4;
-  return tex;
+  g.fillStyle = "#1a7a3c";
+  g.fillRect(0, 0, 1024, 128);
+  const n = 16;
+  for (let i = 0; i < n; i++) {
+    const cx = (i + 0.5) * (1024 / n);
+    for (const off of [-11, 11]) {
+      const x = cx + off;
+      g.fillStyle = "#ffd98a";
+      g.beginPath();
+      g.moveTo(x - 8, 104);
+      g.lineTo(x - 8, 58);
+      g.quadraticCurveTo(x - 8, 36, x, 30);
+      g.quadraticCurveTo(x + 8, 36, x + 8, 58);
+      g.lineTo(x + 8, 104);
+      g.closePath();
+      g.fill();
+    }
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = THREE.RepeatWrapping;
+  return t;
 }
 
-function makeGlowTexture() {
-  const c = document.createElement("canvas");
-  c.width = c.height = 256;
-  const g = c.getContext("2d")!;
-  const grad = g.createRadialGradient(128, 128, 0, 128, 128, 128);
-  grad.addColorStop(0, "rgba(255,190,90,0.28)");
-  grad.addColorStop(0.35, "rgba(245,166,35,0.08)");
-  grad.addColorStop(1, "rgba(245,166,35,0)");
-  g.fillStyle = grad;
-  g.fillRect(0, 0, 256, 256);
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
+function useMaterials() {
+  return useMemo(() => {
+    const marbleMap = marbleTexture();
+    const marble = new THREE.MeshPhysicalMaterial({
+      map: marbleMap,
+      roughness: 0.28,
+      clearcoat: 0.6,
+      clearcoatRoughness: 0.25,
+    });
+    const gold = new THREE.MeshStandardMaterial({ color: "#e3b04b", metalness: 1, roughness: 0.18 });
+    const goldGlow = new THREE.MeshStandardMaterial({
+      color: "#ffd27a",
+      metalness: 1,
+      roughness: 0.2,
+      emissive: "#f5a623",
+      emissiveIntensity: 0.6,
+    });
+    const green = new THREE.MeshPhysicalMaterial({
+      color: "#15803d",
+      metalness: 0.35,
+      roughness: 0.3,
+      clearcoat: 1,
+      clearcoatRoughness: 0.12,
+    });
+    const drumMap = drumTexture();
+    const drum = new THREE.MeshPhysicalMaterial({
+      map: drumMap,
+      emissiveMap: drumMap,
+      emissive: new THREE.Color("#ffb347"),
+      emissiveIntensity: 0.0,
+      metalness: 0.3,
+      roughness: 0.35,
+      clearcoat: 1,
+    });
+    // only the windows glow: emissive colour × map, dark green contributes little
+    drum.emissiveIntensity = 0.55;
+    const chevron = new THREE.MeshStandardMaterial({ map: chevronTexture(), metalness: 0.55, roughness: 0.25 });
+    const dark = new THREE.MeshStandardMaterial({ color: "#1b1712", roughness: 0.6 });
+    const recess = new THREE.MeshPhysicalMaterial({ map: marbleMap, color: "#cdc6b8", roughness: 0.35, clearcoat: 0.4 });
+    const glass = new THREE.MeshStandardMaterial({ color: "#0e1512", metalness: 0.8, roughness: 0.1 });
+    return { marble, gold, goldGlow, green, drum, chevron, dark, glass, recess };
+  }, []);
 }
 
-// ── Building ────────────────────────────────────────────────────────────────
-function Block({ rect, arch }: { rect: [number, number, number, number]; arch: THREE.Texture }) {
-  const [x1, z1, x2, z2] = rect;
-  const w = x2 - x1;
-  const d = z2 - z1;
+type Mats = ReturnType<typeof useMaterials>;
 
-  const { geometry, materials, edges } = useMemo(() => {
-    const geometry = new THREE.BoxGeometry(w, BUILDING_H, d);
-    const wall = (len: number) => {
-      const t = arch.clone();
-      t.needsUpdate = true;
-      t.repeat.set(Math.round(len / 0.9), 1);
-      return new THREE.MeshStandardMaterial({
-        map: t,
-        emissiveMap: t,
-        emissive: new THREE.Color("#ffb347"),
-        emissiveIntensity: 1.4,
-        roughness: 0.85,
-      });
-    };
-    const roof = new THREE.MeshStandardMaterial({ color: "#221b14", roughness: 0.95 });
-    const materials = [wall(d), wall(d), roof, roof, wall(w), wall(w)];
-    const edges = new THREE.EdgesGeometry(geometry);
-    return { geometry, materials, edges };
-  }, [w, d, arch]);
-
+// ── Shared ornaments ────────────────────────────────────────────────────────
+function Finial({ m, scale = 1, crescent = true }: { m: Mats; scale?: number; crescent?: boolean }) {
   return (
-    <group position={[(x1 + x2) / 2, BUILDING_H / 2, (z1 + z2) / 2]}>
-      <mesh geometry={geometry} material={materials} castShadow receiveShadow />
-      <lineSegments geometry={edges}>
-        <lineBasicMaterial color={GOLD} toneMapped={false} transparent opacity={0.9} />
-      </lineSegments>
+    <group scale={scale}>
+      <mesh material={m.gold} position={[0, 0.06, 0]}>
+        <sphereGeometry args={[0.13, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2]} />
+      </mesh>
+      <mesh material={m.gold} position={[0, 0.28, 0]}>
+        <cylinderGeometry args={[0.02, 0.035, 0.36, 12]} />
+      </mesh>
+      {[0.2, 0.36, 0.5].map((y, i) => (
+        <mesh key={y} material={m.gold} position={[0, y, 0]}>
+          <sphereGeometry args={[0.055 - i * 0.01, 24, 12]} />
+        </mesh>
+      ))}
+      <mesh material={m.gold} position={[0, 0.66, 0]}>
+        <cylinderGeometry args={[0.01, 0.02, 0.22, 8]} />
+      </mesh>
+      {crescent && (
+        <mesh material={m.goldGlow} position={[0, 0.9, 0]} rotation={[0, 0, Math.PI * 0.5 + 0.35]}>
+          <torusGeometry args={[0.13, 0.026, 12, 48, Math.PI * 1.55]} />
+        </mesh>
+      )}
     </group>
   );
 }
 
-// Small domes that cover the roof of the mosque.
-function RoofDomes() {
-  const ref = useRef<THREE.InstancedMesh>(null);
-  const positions = useMemo(() => {
+// A circular balcony with a gold railing.
+function Balcony({ m, y, r }: { m: Mats; y: number; r: number }) {
+  const bars = 28;
+  return (
+    <group position={[0, y, 0]}>
+      <mesh material={m.marble}>
+        <cylinderGeometry args={[r, r * 0.86, 0.12, 48]} />
+      </mesh>
+      <mesh material={m.gold} position={[0, 0.07, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[r, 0.018, 8, 64]} />
+      </mesh>
+      <mesh material={m.gold} position={[0, 0.34, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[r * 0.98, 0.022, 8, 64]} />
+      </mesh>
+      {Array.from({ length: bars }, (_, i) => {
+        const a = (i / bars) * Math.PI * 2;
+        return (
+          <mesh key={i} material={m.gold} position={[Math.cos(a) * r * 0.98, 0.2, Math.sin(a) * r * 0.98]}>
+            <cylinderGeometry args={[0.008, 0.008, 0.28, 6]} />
+          </mesh>
+        );
+      })}
+    </group>
+  );
+}
+
+function GoldBand({ m, y, r }: { m: Mats; y: number; r: number }) {
+  return (
+    <mesh material={m.gold} position={[0, y, 0]}>
+      <cylinderGeometry args={[r, r, 0.06, 48]} />
+    </mesh>
+  );
+}
+
+// Small dark arched window, facing outward at radius r and angle a.
+function ArchWindow({ m, r, a, y, w = 0.1, h = 0.22, recess = false }: { m: Mats; r: number; a: number; y: number; w?: number; h?: number; recess?: boolean }) {
+  const mat = recess ? m.recess : m.glass;
+  return (
+    <group position={[Math.sin(a) * r, y, Math.cos(a) * r]} rotation={[0, a, 0]}>
+      {recess && (
+        <mesh material={m.gold} position={[0, 0.02, -0.004]}>
+          <boxGeometry args={[w + 0.05, h + w * 0.5 + 0.04, 0.012]} />
+        </mesh>
+      )}
+      <mesh material={mat}>
+        <boxGeometry args={[w, h, 0.02]} />
+      </mesh>
+      <mesh material={mat} position={[0, h / 2, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[w / 2, w / 2, 0.02, 16, 1, false, 0, Math.PI]} />
+      </mesh>
+    </group>
+  );
+}
+
+// ── Minaret ─────────────────────────────────────────────────────────────────
+function Minaret({ m }: { m: Mats }) {
+  const merlons = useMemo(() => {
     const out: [number, number][] = [];
-    for (const [x1, z1, x2, z2] of BLOCKS) {
-      for (let x = x1 + 1; x < x2 - 0.5; x += 2) {
-        for (let z = z1 + 1; z < z2 - 0.5; z += 2) {
-          // keep the area around the Green Dome clear
-          if (Math.hypot(x - GREEN_DOME[0], z - GREEN_DOME[1]) < 2.6) continue;
-          out.push([x, z]);
-        }
-      }
+    const s = 0.88;
+    for (let i = -3; i <= 3; i++) {
+      const v = (i / 3) * s;
+      out.push([v, s], [v, -s], [s, v], [-s, v]);
     }
     return out;
   }, []);
 
-  useLayoutEffect(() => {
-    const m = new THREE.Matrix4();
-    positions.forEach(([x, z], i) => {
-      m.makeTranslation(x, BUILDING_H, z);
-      ref.current!.setMatrixAt(i, m);
-    });
-    ref.current!.instanceMatrix.needsUpdate = true;
-  }, [positions]);
-
   return (
-    <instancedMesh ref={ref} args={[undefined, undefined, positions.length]}>
-      <sphereGeometry args={[0.5, 24, 10, 0, Math.PI * 2, 0, Math.PI / 2]} />
-      <meshStandardMaterial color="#cdb07a" metalness={0.35} roughness={0.4} emissive="#6b4a18" emissiveIntensity={0.4} />
-    </instancedMesh>
+    <group>
+      {/* plinth + square marble base with gold columns and arch niches */}
+      <mesh material={m.marble} position={[0, 0.12, 0]}>
+        <boxGeometry args={[1.9, 0.24, 1.9]} />
+      </mesh>
+      <mesh material={m.marble} position={[0, 1.55, 0]}>
+        <boxGeometry args={[1.5, 2.7, 1.5]} />
+      </mesh>
+      {[-1, 1].flatMap((sx) =>
+        [-1, 1].map((sz) => (
+          <mesh key={`${sx}${sz}`} material={m.gold} position={[sx * 0.78, 1.45, sz * 0.78]}>
+            <cylinderGeometry args={[0.045, 0.045, 2.3, 16]} />
+          </mesh>
+        )),
+      )}
+      {[0, Math.PI / 2, Math.PI, -Math.PI / 2].map((a) => (
+        <group key={a}>
+          <ArchWindow m={m} r={0.76} a={a} y={1.15} w={0.4} h={0.9} recess />
+          <ArchWindow m={m} r={0.76} a={a} y={2.35} w={0.14} h={0.26} />
+        </group>
+      ))}
+      {/* stepped cornice */}
+      {[0, 1, 2].map((i) => (
+        <mesh key={i} material={i === 1 ? m.gold : m.marble} position={[0, 2.97 + i * 0.1, 0]}>
+          <boxGeometry args={[1.56 + i * 0.1, 0.1, 1.56 + i * 0.1]} />
+        </mesh>
+      ))}
+      {/* square balcony with crenellations */}
+      <mesh material={m.marble} position={[0, 3.3, 0]}>
+        <boxGeometry args={[1.9, 0.12, 1.9]} />
+      </mesh>
+      {merlons.map(([x, z], i) => (
+        <mesh key={i} material={m.marble} position={[x, 3.47, z]}>
+          <boxGeometry args={[0.13, 0.24, 0.13]} />
+        </mesh>
+      ))}
+      {[-1, 1].flatMap((sx) =>
+        [-1, 1].map((sz) => (
+          <mesh key={`f${sx}${sz}`} material={m.gold} position={[sx * 0.88, 3.66, sz * 0.88]}>
+            <sphereGeometry args={[0.06, 16, 12]} />
+          </mesh>
+        )),
+      )}
+
+      {/* gold chevron octagon */}
+      <mesh material={m.chevron} position={[0, 4.25, 0]}>
+        <cylinderGeometry args={[0.56, 0.6, 1.7, 8]} />
+      </mesh>
+      <GoldBand m={m} y={5.12} r={0.62} />
+
+      {/* white shaft with bands and first balcony */}
+      <mesh material={m.marble} position={[0, 5.6, 0]}>
+        <cylinderGeometry args={[0.5, 0.55, 0.9, 32]} />
+      </mesh>
+      <Balcony m={m} y={6.1} r={0.72} />
+      <mesh material={m.marble} position={[0, 6.75, 0]}>
+        <cylinderGeometry args={[0.44, 0.47, 1.2, 32]} />
+      </mesh>
+      {[0, 1, 2, 3, 4, 5].map((i) => (
+        <ArchWindow key={i} m={m} r={0.455} a={(i / 6) * Math.PI * 2} y={6.72} />
+      ))}
+      <GoldBand m={m} y={6.35} r={0.475} />
+      <GoldBand m={m} y={7.2} r={0.45} />
+      <Balcony m={m} y={7.4} r={0.62} />
+
+      {/* upper shaft and lantern */}
+      <mesh material={m.marble} position={[0, 7.95, 0]}>
+        <cylinderGeometry args={[0.36, 0.39, 1, 32]} />
+      </mesh>
+      <GoldBand m={m} y={8.3} r={0.38} />
+      {[0, 1, 2, 3, 4, 5].map((i) => (
+        <ArchWindow key={i} m={m} r={0.375} a={(i / 6) * Math.PI * 2 + 0.5} y={7.9} w={0.08} h={0.18} />
+      ))}
+      <mesh material={m.marble} position={[0, 8.65, 0]}>
+        <cylinderGeometry args={[0.26, 0.3, 0.6, 32]} />
+      </mesh>
+      {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => {
+        const a = (i / 8) * Math.PI * 2;
+        return (
+          <mesh key={i} material={m.gold} position={[Math.cos(a) * 0.3, 8.65, Math.sin(a) * 0.3]}>
+            <cylinderGeometry args={[0.012, 0.012, 0.55, 8]} />
+          </mesh>
+        );
+      })}
+      <mesh material={m.marble} position={[0, 9.0, 0]} scale={[1, 1.2, 1]}>
+        <sphereGeometry args={[0.27, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2]} />
+      </mesh>
+      <group position={[0, 9.28, 0]}>
+        <Finial m={m} scale={1.1} />
+      </group>
+    </group>
   );
 }
 
-// Onion-like pointed dome profile used for the Green Dome.
-function domeGeometry(radius: number, height: number) {
+// ── Green Dome ──────────────────────────────────────────────────────────────
+function ribbedDome(radius: number, height: number, ribs = 16) {
   const pts: THREE.Vector2[] = [];
-  const n = 40;
+  const n = 48;
   for (let i = 0; i <= n; i++) {
     const a = (i / n) * (Math.PI / 2);
-    // near-hemispherical with a gentle bulge, rising to a soft point
-    const r = radius * Math.pow(Math.cos(a), 0.85) * (1 + 0.05 * Math.sin((i / n) * Math.PI));
-    pts.push(new THREE.Vector2(Math.max(r, 0.001), height * Math.sin(a)));
+    const r = radius * Math.pow(Math.cos(a), 0.9);
+    pts.push(new THREE.Vector2(Math.max(r, 0.0005), height * Math.sin(a)));
   }
-  pts.push(new THREE.Vector2(0.001, height * 1.1));
-  return new THREE.LatheGeometry(pts, 48);
+  const geo = new THREE.LatheGeometry(pts, 128);
+  // raise thin ribs around the dome
+  const pos = geo.attributes.position as THREE.BufferAttribute;
+  const v = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) {
+    v.fromBufferAttribute(pos, i);
+    const theta = Math.atan2(v.z, v.x);
+    const rib = Math.pow(Math.abs(Math.cos((theta * ribs) / 2)), 14);
+    const k = 1 + 0.03 * rib * (1 - v.y / height);
+    pos.setXYZ(i, v.x * k, v.y, v.z * k);
+  }
+  geo.computeVertexNormals();
+  return geo;
 }
 
-function Crescent({ y, size = 1 }: { y: number; size?: number }) {
-  return (
-    <group position={[0, y, 0]} scale={size}>
-      <mesh position={[0, 0.1, 0]}>
-        <cylinderGeometry args={[0.012, 0.03, 0.35, 8]} />
-        <meshStandardMaterial color={GOLD} emissive={GOLD} emissiveIntensity={1.2} metalness={0.8} roughness={0.25} toneMapped={false} />
-      </mesh>
-      <mesh position={[0, 0.36, 0]} rotation={[0, 0, Math.PI * 0.3]}>
-        <torusGeometry args={[0.09, 0.018, 8, 24, Math.PI * 1.35]} />
-        <meshStandardMaterial color={GOLD} emissive={GOLD} emissiveIntensity={2} toneMapped={false} />
-      </mesh>
-    </group>
-  );
-}
-
-function GreenDome() {
-  const dome = useMemo(() => domeGeometry(1.25, 1.45), []);
-  const ref = useRef<THREE.MeshStandardMaterial>(null);
-  useFrame(({ clock }) => {
-    if (ref.current) ref.current.emissiveIntensity = 0.55 + Math.sin(clock.elapsedTime * 1.2) * 0.12;
-  });
-  return (
-    <group position={[GREEN_DOME[0], BUILDING_H, GREEN_DOME[1]]}>
-      {/* drum */}
-      <mesh position={[0, 0.45, 0]}>
-        <cylinderGeometry args={[1.38, 1.46, 1, 8]} />
-        <meshStandardMaterial ref={ref} color="#1e8a52" emissive="#1fae5f" emissiveIntensity={0.55} roughness={0.4} />
-      </mesh>
-      <mesh position={[0, 1, 0]} geometry={dome}>
-        <meshStandardMaterial color="#1f8f55" emissive="#138a4a" emissiveIntensity={0.45} roughness={0.35} metalness={0.2} />
-      </mesh>
-      <Crescent y={2.55} size={1.7} />
-      <pointLight position={[0, 1.6, 1.8]} color="#37d67a" intensity={6} distance={7} decay={2} />
-      {/* neighbouring silver dome */}
-      <mesh position={[-3, 0, -0.4]}>
-        <sphereGeometry args={[0.6, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
-        <meshStandardMaterial color="#c7c9cc" metalness={0.6} roughness={0.3} emissive="#6b6f75" emissiveIntensity={0.3} />
-      </mesh>
-    </group>
-  );
-}
-
-// A single minaret: square base, octagonal shafts with three lit galleries,
-// cylindrical top, small dome and a golden crescent.
-function Minaret({ position, scale }: { position: [number, number, number]; scale: number }) {
-  const stone = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: "#d9c6a0", roughness: 0.7, emissive: "#6b4d22", emissiveIntensity: 0.35 }),
-    [],
-  );
-  const ring = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: AMBER, emissive: AMBER, emissiveIntensity: 2.6, toneMapped: false }),
-    [],
-  );
-
-  const gallery = (y: number, r: number) => (
-    <group position={[0, y, 0]}>
-      <mesh material={stone}>
-        <cylinderGeometry args={[r, r * 0.8, 0.14, 8]} />
-      </mesh>
-      <mesh material={ring} position={[0, 0.12, 0]} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[r * 0.98, 0.022, 6, 32]} />
-      </mesh>
-    </group>
-  );
-
-  return (
-    <group position={position} scale={scale}>
-      <mesh material={stone} position={[0, 1.1, 0]}>
-        <boxGeometry args={[0.72, 2.2, 0.72]} />
-      </mesh>
-      <mesh material={stone} position={[0, 3.2, 0]}>
-        <cylinderGeometry args={[0.3, 0.34, 2, 8]} />
-      </mesh>
-      {gallery(4.25, 0.5)}
-      <mesh material={stone} position={[0, 5.1, 0]}>
-        <cylinderGeometry args={[0.25, 0.28, 1.6, 8]} />
-      </mesh>
-      {gallery(5.95, 0.42)}
-      <mesh material={stone} position={[0, 6.6, 0]}>
-        <cylinderGeometry args={[0.2, 0.22, 1.2, 16]} />
-      </mesh>
-      {gallery(7.25, 0.34)}
-      <mesh material={stone} position={[0, 7.6, 0]}>
-        <cylinderGeometry args={[0.17, 0.18, 0.55, 16]} />
-      </mesh>
-      <mesh position={[0, 7.88, 0]} scale={[1, 1.35, 1]}>
-        <sphereGeometry args={[0.19, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2]} />
-        <meshStandardMaterial color="#e6d6b4" emissive="#7a5a22" emissiveIntensity={0.5} roughness={0.5} />
-      </mesh>
-      <Crescent y={8.1} />
-    </group>
-  );
-}
-
-// Giant courtyard umbrellas, instanced across the surrounding plaza.
-function Umbrellas() {
-  const canopy = useRef<THREE.InstancedMesh>(null);
-  const pole = useRef<THREE.InstancedMesh>(null);
-
-  const spots = useMemo(() => {
-    const out: [number, number][] = [];
-    for (let x = -15.5; x <= 15.5; x += 2.6) {
-      for (let z = -17; z <= 17; z += 2.6) {
-        const insideBuilding = x > -8.4 && x < 8.4 && z > -10.4 && z < 10.4;
-        if (insideBuilding || Math.hypot(x * 1.15, z) > 17) continue;
-        out.push([x, z]);
-      }
+function GreenDome({ m }: { m: Mats }) {
+  const dome = useMemo(() => ribbedDome(1.5, 1.55), []);
+  const gables = useMemo(() => {
+    const out: { p: [number, number, number]; r: number }[] = [];
+    const s = 1.85;
+    for (let i = -2; i <= 2; i++) {
+      const v = (i / 2) * (s - 0.4);
+      out.push({ p: [v, 0, s], r: 0 }, { p: [v, 0, -s], r: 0 }, { p: [s, 0, v], r: Math.PI / 2 }, { p: [-s, 0, v], r: Math.PI / 2 });
     }
-    // inside the two courtyards
-    for (const z of [-4.6, -3, 3]) for (const x of [-1.6, 1.6]) out.push([x, z]);
     return out;
   }, []);
-
-  useLayoutEffect(() => {
-    const m = new THREE.Matrix4();
-    const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.PI, Math.PI / 4, 0));
-    const s = new THREE.Vector3(1, 1, 1);
-    spots.forEach(([x, z], i) => {
-      m.compose(new THREE.Vector3(x, 1.25, z), q, s);
-      canopy.current!.setMatrixAt(i, m);
-      m.makeTranslation(x, 0.55, z);
-      pole.current!.setMatrixAt(i, m);
-    });
-    canopy.current!.instanceMatrix.needsUpdate = true;
-    pole.current!.instanceMatrix.needsUpdate = true;
-  }, [spots]);
+  const prism = useMemo(() => {
+    const shape = new THREE.Shape();
+    shape.moveTo(-0.34, 0);
+    shape.lineTo(0, 0.42);
+    shape.lineTo(0.34, 0);
+    shape.lineTo(-0.34, 0);
+    const g = new THREE.ExtrudeGeometry(shape, { depth: 0.2, bevelEnabled: false });
+    g.translate(0, 0, -0.1);
+    return g;
+  }, []);
 
   return (
     <group>
-      <instancedMesh ref={canopy} args={[undefined, undefined, spots.length]}>
-        <coneGeometry args={[0.85, 0.45, 4, 1, true]} />
-        <meshStandardMaterial color="#a8987c" emissive="#ffb347" emissiveIntensity={0.12} side={THREE.DoubleSide} roughness={0.7} />
-      </instancedMesh>
-      <instancedMesh ref={pole} args={[undefined, undefined, spots.length]}>
-        <cylinderGeometry args={[0.035, 0.05, 1.1, 6]} />
-        <meshStandardMaterial color="#e8dcc4" emissive="#8a6a30" emissiveIntensity={0.4} />
-      </instancedMesh>
+      {/* marble base with triangular gables and round windows */}
+      <mesh material={m.marble} position={[0, 0.7, 0]}>
+        <boxGeometry args={[3.7, 1.4, 3.7]} />
+      </mesh>
+      {gables.map((g, i) => (
+        <mesh key={i} geometry={prism} material={m.marble} position={[g.p[0], 1.4, g.p[2]]} rotation={[0, g.r, 0]} />
+      ))}
+      {[0, Math.PI / 2, Math.PI, -Math.PI / 2].map((a) =>
+        [-1, 1].map((side) =>
+          (
+            [
+              [-0.13, 0.95],
+              [0.13, 0.95],
+              [0, 0.72],
+            ] as const
+          ).map(([dx, y], j) => {
+            const x = side * 1.15 + dx;
+            return (
+              <group key={`${a}${side}${j}`} rotation={[0, a, 0]}>
+                <mesh material={m.gold} position={[x, y, 1.855]}>
+                  <torusGeometry args={[0.1, 0.014, 8, 32]} />
+                </mesh>
+                <mesh material={m.glass} position={[x, y, 1.852]} rotation={[Math.PI / 2, 0, 0]}>
+                  <cylinderGeometry args={[0.09, 0.09, 0.01, 24]} />
+                </mesh>
+              </group>
+            );
+          }),
+        ),
+      )}
+
+      {/* green drum: skirt, windowed band, ledge */}
+      <mesh material={m.green} position={[0, 1.55, 0]}>
+        <cylinderGeometry args={[1.82, 1.9, 0.14, 64]} />
+      </mesh>
+      <mesh material={m.drum} position={[0, 1.95, 0]}>
+        <cylinderGeometry args={[1.62, 1.72, 0.7, 64]} />
+      </mesh>
+      <mesh material={m.green} position={[0, 2.34, 0]}>
+        <cylinderGeometry args={[1.66, 1.64, 0.1, 64]} />
+      </mesh>
+      <mesh material={m.drum} position={[0, 2.62, 0]} scale={[0.95, 0.75, 0.95]}>
+        <cylinderGeometry args={[1.58, 1.62, 0.6, 64]} />
+      </mesh>
+
+      {/* ribbed dome + gold crown */}
+      <mesh geometry={dome} material={m.green} position={[0, 2.84, 0]} />
+      <group position={[0, 4.36, 0]}>
+        <Finial m={m} scale={1.35} crescent={false} />
+      </group>
     </group>
   );
 }
 
-// Floating golden dust and a starfield.
-function Particles({ count = 420 }: { count?: number }) {
-  const ref = useRef<THREE.Points>(null);
-  const { positions, speeds } = useMemo(() => {
-    const positions = new Float32Array(count * 3);
-    const speeds = new Float32Array(count);
-    for (let i = 0; i < count; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 50;
-      positions[i * 3 + 1] = Math.random() * 16;
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 50;
-      speeds[i] = 0.15 + Math.random() * 0.45;
-    }
-    return { positions, speeds };
-  }, [count]);
+// ── Scene ───────────────────────────────────────────────────────────────────
+function Monument({ scroll }: { scroll?: MotionValue<number> }) {
+  const m = useMaterials();
+  const group = useRef<THREE.Group>(null);
+  const spin = useRef(0);
+  const drag = useRef({ active: false, x: 0, v: 0 });
 
-  useFrame((_, dt) => {
-    const attr = ref.current?.geometry.attributes.position as THREE.BufferAttribute | undefined;
-    if (!attr) return;
-    const arr = attr.array as Float32Array;
-    for (let i = 0; i < count; i++) {
-      arr[i * 3 + 1] += speeds[i] * dt;
-      if (arr[i * 3 + 1] > 16) arr[i * 3 + 1] = 0;
+  // drag to rotate (desktop + touch), with inertia
+  const { gl } = useThree();
+  useEffect(() => {
+    const el = gl.domElement;
+    const down = (e: PointerEvent) => {
+      drag.current.active = true;
+      drag.current.x = e.clientX;
+    };
+    const move = (e: PointerEvent) => {
+      if (!drag.current.active) return;
+      const dx = e.clientX - drag.current.x;
+      drag.current.x = e.clientX;
+      drag.current.v = dx * 0.006;
+      spin.current += drag.current.v;
+    };
+    const up = () => (drag.current.active = false);
+    el.addEventListener("pointerdown", down);
+    window.addEventListener("pointermove", move, { passive: true });
+    window.addEventListener("pointerup", up);
+    el.style.cursor = "grab";
+    return () => {
+      el.removeEventListener("pointerdown", down);
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+  }, [gl]);
+
+  useFrame((state, dt) => {
+    const g = group.current;
+    if (!g) return;
+    if (!drag.current.active) {
+      drag.current.v *= 0.94;
+      spin.current += drag.current.v + dt * 0.12; // slow turntable
     }
-    attr.needsUpdate = true;
+    const s = scroll ? scroll.get() : 0;
+    const intro = 1 - Math.pow(1 - Math.min(state.clock.elapsedTime / 2.6, 1), 3);
+    g.rotation.y = -0.55 + spin.current + s * 1.2;
+    g.position.y = THREE.MathUtils.lerp(-2.5, 0, intro) + Math.sin(state.clock.elapsedTime * 0.6) * 0.05;
+    g.scale.setScalar(THREE.MathUtils.lerp(0.85, 1, intro));
   });
 
   return (
-    <points ref={ref}>
-      <bufferGeometry>
-        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
-      </bufferGeometry>
-      <pointsMaterial color={GOLD} size={0.09} sizeAttenuation transparent opacity={0.85} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
-    </points>
-  );
-}
-
-function Stars({ count = 900 }: { count?: number }) {
-  const positions = useMemo(() => {
-    const p = new Float32Array(count * 3);
-    for (let i = 0; i < count; i++) {
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.random() * Math.PI * 0.42;
-      const r = 90;
-      p[i * 3] = r * Math.sin(phi) * Math.cos(theta);
-      p[i * 3 + 1] = r * Math.cos(phi);
-      p[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
-    }
-    return p;
-  }, [count]);
-  return (
-    <points>
-      <bufferGeometry>
-        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
-      </bufferGeometry>
-      <pointsMaterial color="#fff3dc" size={0.35} sizeAttenuation transparent opacity={0.7} depthWrite={false} fog={false} />
-    </points>
-  );
-}
-
-function Ground() {
-  const grid = useMemo(() => {
-    const g = new THREE.GridHelper(80, 40, AMBER, AMBER);
-    const mat = g.material as THREE.LineBasicMaterial;
-    mat.transparent = true;
-    mat.opacity = 0.13;
-    mat.depthWrite = false;
-    return g;
-  }, []);
-  return (
-    <group>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[200, 200]} />
-        <meshStandardMaterial color="#0b0907" roughness={1} />
-      </mesh>
-      {/* marble plaza */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]} receiveShadow>
-        <circleGeometry args={[21, 64]} />
-        <meshStandardMaterial color="#1f1a14" roughness={0.55} metalness={0.1} />
-      </mesh>
-      <primitive object={grid} position={[0, 0.02, 0]} />
+    <group ref={group}>
+      <group position={[-1.55, 0, -0.9]}>
+        <Minaret m={m} />
+      </group>
+      <group position={[1.2, 0, 0.45]}>
+        <GreenDome m={m} />
+      </group>
     </group>
   );
 }
 
-function Masjid() {
-  const arch = useMemo(() => makeArchTexture(), []);
-  const glow = useMemo(() => makeGlowTexture(), []);
+function Floor() {
   return (
-    <group>
-      <Ground />
-      {BLOCKS.map((b, i) => (
-        <Block key={i} rect={b} arch={arch} />
-      ))}
-      <RoofDomes />
-      <GreenDome />
-      {MINARETS.map(([x, z, s], i) => (
-        <Minaret key={i} position={[x, 0, z]} scale={s} />
-      ))}
-      <Umbrellas />
-      {/* warm halo behind the complex */}
-      <sprite position={[0, 5, -16]} scale={[46, 26, 1]}>
-        <spriteMaterial map={glow} transparent depthWrite={false} blending={THREE.AdditiveBlending} fog={false} />
-      </sprite>
-    </group>
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
+      <circleGeometry args={[70, 64]} />
+      <MeshReflectorMaterial
+        blur={[400, 120]}
+        resolution={1024}
+        mixBlur={1}
+        mixStrength={40}
+        roughness={0.6}
+        depthScale={1}
+        minDepthThreshold={0.4}
+        maxDepthThreshold={1.4}
+        color="#0a0908"
+        metalness={0.6}
+        mirror={0.8}
+      />
+    </mesh>
   );
 }
 
-// ── Camera rig: intro fly-in, idle drift, pointer parallax and scroll ───────
+// Fog tuned to the camera distance (further away on portrait screens).
+function SceneFog() {
+  const { scene, size } = useThree();
+  useEffect(() => {
+    const portrait = size.width < size.height;
+    scene.fog = portrait ? new THREE.Fog("#050403", 46, 90) : new THREE.Fog("#050403", 24, 50);
+  }, [scene, size]);
+  return null;
+}
+
+// Camera: pointer parallax, scroll dolly, and side offset for the headline.
 function Rig({ scroll, shift }: { scroll?: MotionValue<number>; shift: number }) {
   const { camera, size } = useThree();
-  const pointer = useRef({ x: 0, y: 0 });
+  const target = useMemo(() => new THREE.Vector3(0, 4.2, 0), []);
   const smooth = useRef({ x: 0, y: 0 });
-  const target = useMemo(() => new THREE.Vector3(0, 2.4, 0), []);
 
-  useEffect(() => {
-    const onMove = (e: PointerEvent) => {
-      pointer.current.x = (e.clientX / window.innerWidth) * 2 - 1;
-      pointer.current.y = (e.clientY / window.innerHeight) * 2 - 1;
-    };
-    window.addEventListener("pointermove", onMove, { passive: true });
-    return () => window.removeEventListener("pointermove", onMove);
-  }, []);
-
-  // Shift the rendered frame sideways so the model sits beside the headline.
   useEffect(() => {
     const cam = camera as THREE.PerspectiveCamera;
-    // Portrait screens: lift the model into the upper part, above the copy.
-    const shiftY = size.width < size.height ? size.height * 0.2 : 0;
+    const portrait = size.width < size.height;
+    const shiftY = portrait ? size.height * 0.24 : 0;
     if (shift || shiftY) cam.setViewOffset(size.width, size.height, -size.width * shift, shiftY, size.width, size.height);
     else cam.clearViewOffset();
     cam.updateProjectionMatrix();
   }, [camera, size, shift]);
 
-  useFrame(({ clock }) => {
-    const t = clock.elapsedTime;
-    const intro = 1 - Math.pow(1 - Math.min(t / 4, 1), 3);
+  useFrame(({ pointer }) => {
+    smooth.current.x += (pointer.x - smooth.current.x) * 0.05;
+    smooth.current.y += (pointer.y - smooth.current.y) * 0.05;
     const s = scroll ? scroll.get() : 0;
-    smooth.current.x += (pointer.current.x - smooth.current.x) * 0.04;
-    smooth.current.y += (pointer.current.y - smooth.current.y) * 0.04;
-
     const portrait = size.width < size.height;
-    const radius = (THREE.MathUtils.lerp(58, 33, intro) - s * 10) * (portrait ? 1.75 : 1);
-    const theta = THREE.MathUtils.lerp(-0.35, 0.7, intro) + Math.sin(t * 0.07) * 0.14 + smooth.current.x * 0.12 + s * 0.5;
-    const height = THREE.MathUtils.lerp(34, 12.5, intro) + smooth.current.y * 1.6 + s * 7;
-
-    camera.position.set(Math.sin(theta) * radius, height, Math.cos(theta) * radius);
+    const dist = (portrait ? 48 : 26.5) - s * 4;
+    camera.position.set(smooth.current.x * 1.6, 4.2 + smooth.current.y * 0.8 + s * 2.5, dist);
     camera.lookAt(target);
   });
   return null;
@@ -473,26 +569,66 @@ export default function MasjidScene({
   return (
     <Canvas
       frameloop={paused ? "never" : "always"}
-      dpr={lowPower ? [1, 1.25] : [1, 1.75]}
-      camera={{ fov: 32, near: 0.5, far: 300, position: [0, 30, 58] }}
-      gl={{ antialias: !lowPower, powerPreference: "high-performance" }}
+      dpr={lowPower ? [1, 1.5] : [1, 2]}
+      camera={{ fov: 30, near: 0.5, far: 120, position: [0, 4.2, 22] }}
+      gl={{ antialias: true, powerPreference: "high-performance", toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.05 }}
       onCreated={({ gl }) => gl.setClearColor("#050403")}
     >
-      <fog attach="fog" args={["#050403", 38, 95]} />
-      <ambientLight intensity={0.35} color="#ffe6c0" />
-      <hemisphereLight args={["#2a3550", "#0b0806", 0.6]} />
-      <directionalLight position={[-12, 22, 10]} intensity={0.9} color="#c4d0ff" />
-      <pointLight position={[0, 4, 14]} intensity={60} distance={40} decay={2} color="#ffb347" />
-      <pointLight position={[-10, 5, -4]} intensity={30} distance={30} decay={2} color="#f5a623" />
+      <SceneFog />
 
-      <Masjid />
-      <Particles count={lowPower ? 200 : 420} />
-      <Stars count={lowPower ? 450 : 900} />
+      {/* studio lighting: warm key, cool fill, amber rim */}
+      <ambientLight intensity={0.15} />
+      <spotLight position={[6, 12, 8]} angle={0.45} penumbra={1} intensity={220} color="#fff3e0" />
+      <spotLight position={[-8, 6, -6]} angle={0.6} penumbra={1} intensity={160} color="#f5a623" />
+      <pointLight position={[-4, 3, 6]} intensity={18} color="#dfe8ff" />
+
+      {/* procedural reflections — no external HDR files */}
+      <Environment resolution={256} frames={1}>
+        <Lightformer form="rect" intensity={3} color="#ffffff" position={[0, 6, 6]} scale={[10, 4, 1]} />
+        <Lightformer form="rect" intensity={2.4} color="#f5a623" position={[-7, 3, 0]} rotation-y={Math.PI / 2} scale={[8, 3, 1]} />
+        <Lightformer form="rect" intensity={1.4} color="#ffe2b0" position={[7, 2, -2]} rotation-y={-Math.PI / 2} scale={[8, 3, 1]} />
+        <Lightformer form="ring" intensity={2} color="#ffffff" position={[0, 10, -4]} scale={3} />
+      </Environment>
+
+      {/* amber halo behind the monument */}
+      <mesh position={[0, 5, -9]}>
+        <planeGeometry args={[30, 20]} />
+        <meshBasicMaterial transparent depthWrite={false} opacity={0.9} fog={false} toneMapped={false}>
+          <canvasTexture
+            attach="map"
+            args={[
+              (() => {
+                const c = document.createElement("canvas");
+                c.width = c.height = 256;
+                const g = c.getContext("2d")!;
+                const grd = g.createRadialGradient(128, 128, 0, 128, 128, 128);
+                grd.addColorStop(0, "rgba(245,166,35,0.16)");
+                grd.addColorStop(0.3, "rgba(245,166,35,0.07)");
+                grd.addColorStop(0.6, "rgba(245,166,35,0.02)");
+                grd.addColorStop(0.85, "rgba(245,166,35,0)");
+                g.fillStyle = grd;
+                g.fillRect(0, 0, 256, 256);
+                return c;
+              })(),
+            ]}
+          />
+        </meshBasicMaterial>
+      </mesh>
+
+      <Monument scroll={scroll} />
+      {!lowPower && <Floor />}
+      {lowPower && (
+        <mesh rotation={[-Math.PI / 2, 0, 0]}>
+          <circleGeometry args={[70, 48]} />
+          <meshStandardMaterial color="#0a0908" metalness={0.2} roughness={0.6} />
+        </mesh>
+      )}
+      <Sparkles count={lowPower ? 40 : 90} scale={[14, 10, 8]} position={[0, 5, 0]} size={2.2} speed={0.3} color="#ffc766" opacity={0.8} />
       <Rig scroll={scroll} shift={shift} />
 
       <EffectComposer multisampling={0}>
-        <Bloom mipmapBlur intensity={lowPower ? 0.8 : 1.15} luminanceThreshold={0.55} luminanceSmoothing={0.2} />
-        <Vignette eskil={false} offset={0.2} darkness={0.75} />
+        <Bloom mipmapBlur intensity={0.55} luminanceThreshold={0.85} luminanceSmoothing={0.15} />
+        <Vignette eskil={false} offset={0.25} darkness={0.7} />
       </EffectComposer>
     </Canvas>
   );
