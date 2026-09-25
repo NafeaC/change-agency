@@ -25,7 +25,7 @@ function BrandMark() {
           <LogoMark3D />
         </Suspense>
       ) : (
-        <img src="/favicon.svg" alt="" className="absolute inset-0 m-auto w-24 h-24 opacity-60" />
+        <img src="/favicon.svg" alt="" className="absolute inset-0 m-auto w-24 h-24 opacity-30 brightness-0" />
       )}
     </div>
   );
@@ -75,9 +75,7 @@ export default function CTA() {
             transition={{ duration: 0.7, delay: 0.15 }}
             className="lg:col-span-5"
           >
-            <div className="relative hidden md:block w-full h-64 lg:h-72 mb-8 rounded-3xl bg-[#0b0a09] overflow-hidden shadow-[0_30px_60px_-20px_rgb(0_0_0/0.45)]">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_60%,rgb(245_166_35/0.28),transparent_60%)]" />
-              <div className="absolute inset-0 grid-bg opacity-60" />
+            <div className="hidden md:block w-56 h-56 lg:w-64 lg:h-64 -mt-6 mb-2 -ms-6">
               <BrandMark />
             </div>
             <p className="text-lg md:text-xl font-medium leading-relaxed text-black/75">

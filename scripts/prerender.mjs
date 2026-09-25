@@ -19,7 +19,7 @@ function page(url, { noindex = false } = {}) {
   const { html, head, lang, dir } = render(url);
   return template
     .replace('<html lang="en" dir="ltr">', `<html lang="${lang}" dir="${dir}">`)
-    .replace("<!--app-head-->", noindex ? '<meta name="robots" content="noindex">\n    <title>404 — Page not found | Change Advertising Agency</title>' : head)
+    .replace("<!--app-head-->", noindex ? '<meta name="robots" content="noindex">\n    <title>404 | Page not found | Change Advertising Agency</title>' : head)
     .replace("<!--app-html-->", html);
 }
 

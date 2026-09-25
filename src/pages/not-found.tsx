@@ -4,7 +4,7 @@ import { LOGO_WHITE } from "@/lib/site";
 
 export default function NotFound() {
   useEffect(() => {
-    document.title = "404 — Page not found | Change Advertising Agency";
+    document.title = "404 | Page not found | Change Advertising Agency";
   }, []);
 
   return (

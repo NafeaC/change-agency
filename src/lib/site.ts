@@ -44,7 +44,7 @@ export const SEO: Record<
       "Full-service advertising agency in Al-Madinah, Saudi Arabia since 2010. Branding, digital marketing, video production, photography, printing and exhibition booths for 700+ brands.",
     locale: "en_US",
     ogImage: "/og/og-en.jpg",
-    ogImageAlt: "Change Advertising Agency — We build brands that grow",
+    ogImageAlt: "Change Advertising Agency: We build brands that grow",
   },
   ar: {
     title: "وكالة تشينج للإعلان | تسويق وهوية تجارية في المدينة المنورة",
@@ -52,6 +52,6 @@ export const SEO: Record<
       "وكالة إعلانية متكاملة في المدينة المنورة منذ 2010: هوية تجارية، تسويق رقمي، إنتاج فيديو وتصوير، طباعة وتنفيذ أجنحة المعارض. أكثر من 700 علامة تجارية وثقت بنا.",
     locale: "ar_SA",
     ogImage: "/og/og-ar.jpg",
-    ogImageAlt: "وكالة تشينج للإعلان — نبني علامات تجارية تنمو",
+    ogImageAlt: "وكالة تشينج للإعلان: نبني علامات تجارية تنمو",
   },
 };

@@ -14,7 +14,7 @@ type L = { en: string; ar: string };
 type Reel = { src: string; poster: string; client: L; type: L };
 
 const REELS: Reel[] = [
-  { src: "/videos/le-royal.mp4", poster: "/videos/le-royal.jpg", client: { en: "Le Royal", ar: "لو رويال" }, type: { en: "Fashion Product Film", ar: "فيلم منتج — أزياء" } },
+  { src: "/videos/le-royal.mp4", poster: "/videos/le-royal.jpg", client: { en: "Le Royal", ar: "لو رويال" }, type: { en: "Fashion Product Film", ar: "فيلم منتج للأزياء" } },
   { src: "/videos/havens-sweets.mp4", poster: "/videos/havens-sweets.jpg", client: { en: "Havens Sweets", ar: "Havens Sweets" }, type: { en: "Food Reel", ar: "ريل أطعمة" } },
   { src: "/videos/diviso-majlis.mp4", poster: "/videos/diviso-majlis.jpg", client: { en: "Diviso Majlis", ar: "مجلس ديفيزو" }, type: { en: "Coffee & Hospitality", ar: "قهوة وضيافة" } },
   { src: "/videos/dave.mp4", poster: "/videos/dave.jpg", client: { en: "DAVE", ar: "DAVE" }, type: { en: "Lifestyle Campaign", ar: "حملة لايف ستايل" } },
@@ -85,8 +85,8 @@ export default function Reels() {
           />
           <p className="text-white/60 font-light text-base md:text-lg max-w-sm leading-relaxed">
             {t(
-              "Concept, shoot and edit — short-form films built to perform on Instagram, TikTok and Snapchat.",
-              "فكرة، تصوير ومونتاج — أفلام قصيرة مصممة لتحقق أثرها على إنستغرام وتيك توك وسناب شات."
+              "Concept, shoot and edit. Short-form films built to perform on Instagram, TikTok and Snapchat.",
+              "فكرة، تصوير ومونتاج. أفلام قصيرة مصممة لتحقق أثرها على إنستغرام وتيك توك وسناب شات."
             )}
           </p>
         </div>
@@ -110,9 +110,9 @@ export default function Reels() {
                   type="button"
                   onClick={() => setOpen(reel)}
                   className="group relative block w-full aspect-[9/16] rounded-[1.75rem] overflow-hidden bg-neutral-900 ring-1 ring-white/10 hover:ring-accent/70 transition-[box-shadow,ring-color] duration-500 shadow-2xl shadow-black/60 text-start"
-                  aria-label={`${t("Play", "تشغيل")} — ${reel.client[language]}`}
+                  aria-label={`${t("Play", "تشغيل")}: ${reel.client[language]}`}
                 >
-                  <AutoVideo reel={reel} label={`${reel.client[language]} — ${reel.type[language]}`} />
+                  <AutoVideo reel={reel} label={`${reel.client[language]}, ${reel.type[language]}`} />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/5 to-black/30" />
                   {/* top bar */}
                   <div className="absolute top-4 inset-x-4 flex items-center justify-between">

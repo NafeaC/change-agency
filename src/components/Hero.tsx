@@ -226,8 +226,8 @@ export default function Hero() {
             style={delay(0.55)}
           >
             {t(
-              "From the heart of Al-Madinah — strategy, content, production and on-ground execution for ambitious brands across Saudi Arabia since 2010.",
-              "من قلب المدينة المنورة — استراتيجية، محتوى، إنتاج وتنفيذ ميداني للعلامات الطموحة في أنحاء المملكة منذ 2010."
+              "From the heart of Al-Madinah: strategy, content, production and on-ground execution for ambitious brands across Saudi Arabia since 2010.",
+              "من قلب المدينة المنورة: استراتيجية، محتوى، إنتاج وتنفيذ ميداني للعلامات الطموحة في أنحاء المملكة منذ 2010."
             )}
           </p>
 

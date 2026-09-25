@@ -85,8 +85,8 @@ export default function Clients() {
             </>
           }
           intro={t(
-            "From hotels and hospitals to restaurants, retail and real estate — businesses across the Kingdom grow with us.",
-            "من الفنادق والمستشفيات إلى المطاعم والتجزئة والعقار — شركات في مختلف أنحاء المملكة تنمو معنا."
+            "From hotels and hospitals to restaurants, retail and real estate, businesses across the Kingdom grow with us.",
+            "من الفنادق والمستشفيات إلى المطاعم والتجزئة والعقار، شركات في مختلف أنحاء المملكة تنمو معنا."
           )}
         />
       </div>

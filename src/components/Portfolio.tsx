@@ -13,7 +13,7 @@ export default function Portfolio() {
       src: "/work/rasia-branding.jpg", w: 1288, h: 851,
       client: t("Rasia Luxury Hotel", "فندق راسيا الفاخر"),
       category: t("Branding & Identity", "العلامة التجارية والهوية"),
-      alt: t("Rasia Luxury Hotel brand identity — stationery and business cards", "هوية فندق راسيا الفاخر — المطبوعات وبطاقات العمل"),
+      alt: t("Rasia Luxury Hotel brand identity: stationery and business cards", "هوية فندق راسيا الفاخر: المطبوعات وبطاقات العمل"),
     },
     {
       src: "/work/dynamite-shrimp-ad.jpg", w: 669, h: 831,

@@ -62,7 +62,7 @@ export default function Process() {
             </>
           }
           intro={t(
-            "A clear, connected methodology — every step serves the final goal.",
+            "A clear, connected methodology where every step serves the final goal.",
             "نعمل وفق منهجية واضحة ومترابطة، تضمن أن كل خطوة تخدم الهدف النهائي."
           )}
           className="mb-16 md:mb-20"

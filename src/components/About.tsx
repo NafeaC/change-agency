@@ -1,31 +1,22 @@
 import { useRef } from "react";
-import { motion, useScroll, useTransform, type MotionValue } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
+import { Target, BarChart3, MapPinned, Sparkles } from "lucide-react";
 import { useLanguage } from "../hooks/useLanguage";
 
-// A word that brightens as the scroll progress passes through its slot.
-function Word({ children, progress, range, accent }: { children: string; progress: MotionValue<number>; range: [number, number]; accent?: boolean }) {
-  const opacity = useTransform(progress, range, [0.15, 1]);
-  return (
-    <motion.span style={{ opacity }} className={accent ? "text-accent" : undefined}>
-      {children}{" "}
-    </motion.span>
-  );
-}
+const ease = [0.16, 1, 0.3, 1] as const;
 
-// Text that lights up word by word while it scrolls through the viewport.
-function ScrollRevealText({ text, accentWords = 0, as = "p", className = "" }: { text: string; accentWords?: number; as?: "h2" | "p"; className?: string }) {
-  const ref = useRef<HTMLElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start 0.85", "end 0.45"] });
-  const words = text.split(" ");
-  const Tag = as === "h2" ? motion.h2 : motion.p;
+// A heading line that slides up from behind a mask. The parent heading
+// triggers it (the clipped line itself never registers as in view).
+function RevealLine({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
   return (
-    <Tag ref={ref as never} className={className}>
-      {words.map((w, i) => (
-        <Word key={i} progress={scrollYProgress} range={[i / words.length, (i + 1) / words.length]} accent={i < accentWords}>
-          {w}
-        </Word>
-      ))}
-    </Tag>
+    <span className="block overflow-hidden pb-[0.08em]">
+      <motion.span
+        className={`block ${className}`}
+        variants={{ hidden: { y: "110%" }, show: { y: "0%", transition: { duration: 0.9, delay, ease } } }}
+      >
+        {children}
+      </motion.span>
+    </span>
   );
 }
 
@@ -36,45 +27,81 @@ export default function About() {
   const imgY = useTransform(scrollYProgress, [0, 1], ["-8%", "8%"]);
 
   const pillars = [
-    t("Strategy before execution", "الاستراتيجية قبل التنفيذ"),
-    t("Decisions backed by data", "قرارات مبنية على البيانات"),
-    t("Deep local market insight", "فهم عميق للسوق المحلي"),
-    t("Creativity measured by results", "إبداع يُقاس بالنتائج"),
+    { icon: Target, label: t("Strategy first", "الاستراتيجية أولًا") },
+    { icon: BarChart3, label: t("Data-driven", "قرارات بالبيانات") },
+    { icon: MapPinned, label: t("Local insight", "فهم للسوق المحلي") },
+    { icon: Sparkles, label: t("Results-led creativity", "إبداع بنتائج") },
   ];
 
   return (
-    <section id="about" className="py-24 md:py-36 px-6 bg-white text-black overflow-hidden">
-      <div className="max-w-7xl mx-auto">
-        <motion.p
-          initial={{ opacity: 0, y: 12 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="inline-flex items-center gap-3 text-xs font-bold uppercase tracking-[0.22em] text-accent-ink mb-8"
-        >
-          <span className="h-px w-8 bg-accent-ink" />
-          {t("About Change", "من نحن")}
-        </motion.p>
+    <section id="about" className="py-24 md:py-32 px-6 bg-white text-black overflow-hidden">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-14 lg:gap-20 items-center">
+        {/* Copy */}
+        <div className="lg:col-span-6">
+          <motion.p
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="inline-flex items-center gap-3 text-xs font-bold uppercase tracking-[0.22em] text-accent-ink mb-6"
+          >
+            <span className="h-px w-8 bg-accent-ink" />
+            {t("About Change", "من نحن")}
+          </motion.p>
 
-        {/* One statement, revealed word by word on scroll */}
-        <ScrollRevealText
-          as="h2"
-          accentWords={t("We think business,", "نفكر بعقلية الأعمال،").split(" ").length}
-          text={t(
-            "We think business, not just marketing — a full-service agency from Al-Madinah helping brands across the Kingdom grow since 2010.",
-            "نفكر بعقلية الأعمال، لا التسويق فقط — وكالة متكاملة من المدينة المنورة تساعد العلامات في أنحاء المملكة على النمو منذ 2010."
-          )}
-          className="max-w-5xl text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1]"
-        />
+          <motion.h2
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-60px" }}
+            className="text-4xl sm:text-5xl font-bold tracking-tight leading-[1.05]"
+          >
+            <RevealLine>{t("We think business,", "نفكر بعقلية الأعمال،")}</RevealLine>
+            <RevealLine delay={0.12} className="text-accent">
+              {t("not just marketing.", "لا التسويق فقط.")}
+            </RevealLine>
+          </motion.h2>
 
-        <div className="mt-14 md:mt-20 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
-          {/* Image with clip reveal + parallax */}
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.8, delay: 0.25, ease }}
+            className="mt-6 text-lg text-black/65 font-light leading-relaxed max-w-lg"
+          >
+            {t(
+              "A full-service agency from Al-Madinah. Since 2010 we have helped brands across the Kingdom grow with strategy built on market reality, not guesswork.",
+              "وكالة متكاملة من المدينة المنورة. منذ 2010 نساعد العلامات في أنحاء المملكة على النمو باستراتيجية مبنية على واقع السوق، لا على التخمين."
+            )}
+          </motion.p>
+
+          <ul className="mt-10 grid grid-cols-2 gap-3 max-w-lg">
+            {pillars.map(({ icon: Icon, label }, i) => (
+              <motion.li
+                key={label}
+                initial={{ opacity: 0, y: 16, scale: 0.96 }}
+                whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                viewport={{ once: true, margin: "-40px" }}
+                transition={{ duration: 0.5, delay: 0.35 + i * 0.08, ease }}
+                className="group flex items-center gap-3 rounded-2xl bg-neutral-100 px-4 py-3.5 hover:bg-black hover:text-white transition-colors duration-300"
+              >
+                <span className="w-9 h-9 shrink-0 rounded-xl bg-white text-accent-ink group-hover:bg-accent group-hover:text-black flex items-center justify-center transition-colors duration-300">
+                  <Icon className="w-[18px] h-[18px]" strokeWidth={1.75} aria-hidden="true" />
+                </span>
+                <span className="text-sm font-semibold leading-tight">{label}</span>
+              </motion.li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Image: clip reveal + parallax, with a floating badge */}
+        <div className="lg:col-span-6 relative">
           <motion.div
             ref={imgRef}
-            initial={{ clipPath: "inset(12% 12% 12% 12% round 28px)" }}
+            initial={{ clipPath: "inset(10% 10% 10% 10% round 28px)" }}
             whileInView={{ clipPath: "inset(0% 0% 0% 0% round 28px)" }}
             viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-            className="lg:col-span-7 relative aspect-[16/11] overflow-hidden rounded-[28px]"
+            transition={{ duration: 1.2, ease }}
+            className="relative aspect-[4/5] sm:aspect-[5/4] lg:aspect-[4/5] overflow-hidden rounded-[28px]"
           >
             <motion.img
               style={{ y: imgY }}
@@ -86,37 +113,24 @@ export default function About() {
               decoding="async"
               className="absolute inset-0 w-full h-[116%] -top-[8%] object-cover"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-            <div className="absolute bottom-6 start-6 end-6 flex items-end justify-between gap-4 text-white">
-              <p className="text-lg sm:text-2xl font-bold">{t("Rooted in Al-Madinah", "من قلب المدينة المنورة")}</p>
-              <span className="shrink-0 rounded-full bg-accent text-black text-xs font-bold px-3 py-1.5">
-                {t("Since 2010", "منذ 2010")}
-              </span>
-            </div>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+            <p className="absolute bottom-6 start-6 text-white text-lg sm:text-xl font-bold">
+              {t("Rooted in Al-Madinah", "من قلب المدينة المنورة")}
+            </p>
           </motion.div>
 
-          {/* Four pillars, one line each */}
-          <ol className="lg:col-span-5">
-            {pillars.map((p, i) => (
-              <motion.li
-                key={p}
-                initial={{ opacity: 0, x: -24 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true, margin: "-40px" }}
-                transition={{ duration: 0.6, delay: i * 0.12, ease: [0.16, 1, 0.3, 1] }}
-                className="group relative flex items-center gap-5 py-6 border-b border-black/10"
-              >
-                <span
-                  aria-hidden="true"
-                  className="absolute bottom-[-1px] inset-x-0 h-px bg-accent origin-left rtl:origin-right scale-x-0 group-hover:scale-x-100 transition-transform duration-500"
-                />
-                <span className="font-mono text-sm text-accent-ink w-8 shrink-0">{String(i + 1).padStart(2, "0")}</span>
-                <span className="text-lg md:text-xl font-semibold group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-transform duration-300">
-                  {p}
-                </span>
-              </motion.li>
-            ))}
-          </ol>
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, delay: 0.5, ease }}
+            className="absolute -bottom-6 end-4 sm:end-6 lg:-end-6 rounded-2xl bg-black text-white px-6 py-5 shadow-2xl shadow-black/30"
+          >
+            <p className="text-3xl font-bold text-accent">
+              <bdi dir="ltr">2010</bdi>
+            </p>
+            <p className="text-xs text-white/60 mt-1">{t("Building brands since", "نبني العلامات منذ")}</p>
+          </motion.div>
         </div>
       </div>
     </section>

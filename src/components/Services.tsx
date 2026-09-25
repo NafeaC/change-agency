@@ -42,8 +42,8 @@ export default function Services() {
       title: t("Change Print & Execution", "تشينج للطباعة والتنفيذ"),
       subtitle: t("Print & Field Execution", "الطباعة والتنفيذ الميداني"),
       desc: t(
-        "From print to storefront signage and exhibition booths — produced and executed on the ground.",
-        "من المطبوعات إلى لوحات الواجهات وأجنحة المعارض — إنتاج وتنفيذ على أرض الواقع."
+        "From print to storefront signage and exhibition booths, produced and executed on the ground.",
+        "من المطبوعات إلى لوحات الواجهات وأجنحة المعارض، إنتاج وتنفيذ على أرض الواقع."
       ),
       items: [
         t("Printing & Production", "الطباعة والإنتاج"),
@@ -75,8 +75,8 @@ export default function Services() {
           />
           <p className="text-white/60 font-light text-base md:text-lg max-w-sm leading-relaxed">
             {t(
-              "Three specialised divisions working as one team — so strategy, content and execution never get lost in hand-offs.",
-              "ثلاثة أقسام متخصصة تعمل كفريق واحد — حتى لا تضيع الاستراتيجية والمحتوى والتنفيذ بين الجهات."
+              "Three specialised divisions working as one team, so strategy, content and execution never get lost in hand-offs.",
+              "ثلاثة أقسام متخصصة تعمل كفريق واحد حتى لا تضيع الاستراتيجية والمحتوى والتنفيذ بين الجهات."
             )}
           </p>
         </div>

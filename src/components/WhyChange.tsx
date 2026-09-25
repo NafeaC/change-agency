@@ -11,16 +11,16 @@ export default function WhyChange() {
       icon: Handshake,
       title: t("Partner, Not a Vendor", "شريك، لا مجرد مورد"),
       desc: t(
-        "We work as part of your team and share the logic behind every decision — no black boxes.",
-        "نعمل كجزء من فريقك ونشاركك المنطق وراء كل قرار — بلا غموض."
+        "We work as part of your team and share the logic behind every decision, with no black boxes.",
+        "نعمل كجزء من فريقك ونشاركك المنطق وراء كل قرار بكل وضوح."
       ),
     },
     {
       icon: MapPinned,
       title: t("Deep Local Expertise", "خبرة محلية عميقة"),
       desc: t(
-        "15+ years of field work in Saudi Arabia. We build solutions for the local market — not imported templates.",
-        "أكثر من 15 عامًا من العمل الميداني في السعودية. نبني حلولًا للسوق المحلي — لا قوالب مستوردة."
+        "15+ years of field work in Saudi Arabia. We build solutions for the local market, not imported templates.",
+        "أكثر من 15 عامًا من العمل الميداني في السعودية. نبني حلولًا للسوق المحلي، لا قوالب مستوردة."
       ),
     },
     {

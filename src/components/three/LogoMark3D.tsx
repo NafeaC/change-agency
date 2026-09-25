@@ -13,7 +13,7 @@ const MARK_PATHS = [
 
 function Mark() {
   const group = useRef<THREE.Group>(null);
-  // [beak, bubble] — extruded separately so each keeps its brand colour.
+  // The two parts of the mark (beak and bubble), extruded separately.
   const [beak, bubble] = useMemo(() => {
     const geos = MARK_PATHS.map((d) => {
       const data = new SVGLoader().parse(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 47"><path d="${d}"/></svg>`);
@@ -57,12 +57,11 @@ function Mark() {
 
   return (
     <group ref={group}>
-      <mesh geometry={bubble}>
-        <meshPhysicalMaterial color="#f7f5f1" roughness={0.22} clearcoat={1} clearcoatRoughness={0.08} />
-      </mesh>
-      <mesh geometry={beak}>
-        <meshStandardMaterial color="#ff9500" roughness={0.45} metalness={0} emissive="#ff7a00" emissiveIntensity={0.2} envMapIntensity={0.25} />
-      </mesh>
+      {[bubble, beak].map((g, i) => (
+        <mesh key={i} geometry={g}>
+          <meshPhysicalMaterial color="#0d0c0b" metalness={0.1} roughness={0.3} clearcoat={0.4} clearcoatRoughness={0.15} />
+        </mesh>
+      ))}
     </group>
   );
 }
@@ -73,7 +72,7 @@ function Studio() {
   useMemo(() => {
     const pmrem = new THREE.PMREMGenerator(gl);
     scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-    scene.environmentIntensity = 0.8;
+    scene.environmentIntensity = 0.35;
     pmrem.dispose();
   }, [gl, scene]);
   return null;
@@ -81,10 +80,10 @@ function Studio() {
 
 export default function LogoMark3D() {
   return (
-    <Canvas flat dpr={[1, 1.75]} camera={{ position: [0, 0, 6], fov: 35 }} gl={{ alpha: true, antialias: true }}>
-      <ambientLight intensity={0.25} />
-      <directionalLight position={[4, 5, 6]} intensity={2} color="#ffffff" />
-      <directionalLight position={[-5, -2, 3]} intensity={2} color="#ffb347" />
+    <Canvas dpr={[1, 1.75]} camera={{ position: [0, 0, 5.6], fov: 35 }} gl={{ alpha: true, antialias: true }}>
+      <ambientLight intensity={0.2} />
+      <directionalLight position={[4, 5, 6]} intensity={1.6} color="#ffffff" />
+      <directionalLight position={[-5, -3, 2]} intensity={2.5} color="#ffb347" />
       <Studio />
       <Mark />
     </Canvas>

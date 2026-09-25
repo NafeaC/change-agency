@@ -9,8 +9,8 @@ export const FAQ: { q: Record<Language, string>; a: Record<Language, string> }[]
       ar: "ما الخدمات التي تقدمها وكالة تشينج؟",
     },
     a: {
-      en: "We are a full-service advertising agency: brand strategy and identity, digital marketing and paid campaigns, video production, photography and content creation, plus printing, physical branding, signage and exhibition booths — all under one roof.",
-      ar: "نحن وكالة إعلانية متكاملة: استراتيجية العلامة التجارية والهوية، التسويق الرقمي والحملات الإعلانية، إنتاج الفيديو والتصوير وصناعة المحتوى، إضافة إلى الطباعة والهوية المكانية واللوحات وأجنحة المعارض — كل ذلك تحت سقف واحد.",
+      en: "We are a full-service advertising agency: brand strategy and identity, digital marketing and paid campaigns, video production, photography and content creation, plus printing, physical branding, signage and exhibition booths, all under one roof.",
+      ar: "نحن وكالة إعلانية متكاملة: استراتيجية العلامة التجارية والهوية، التسويق الرقمي والحملات الإعلانية، إنتاج الفيديو والتصوير وصناعة المحتوى، إضافة إلى الطباعة والهوية المكانية واللوحات وأجنحة المعارض، كل ذلك تحت سقف واحد.",
     },
   },
   {

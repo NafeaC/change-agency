@@ -70,7 +70,7 @@ export default function Nav() {
         <a href="#top" className="shrink-0" onClick={() => setOpen(false)}>
           <img
             src={LOGO_WHITE}
-            alt={t("Change Advertising Agency — Home", "وكالة تشينج للإعلان — الرئيسية")}
+            alt={t("Change Advertising Agency home", "الصفحة الرئيسية لوكالة تشينج للإعلان")}
             width={153}
             height={36}
             className="h-8 sm:h-9 w-auto"
