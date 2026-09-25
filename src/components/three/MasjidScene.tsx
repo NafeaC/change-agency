@@ -438,7 +438,7 @@ function GreenDome({ m }: { m: Mats }) {
 }
 
 // ── Scene ───────────────────────────────────────────────────────────────────
-function Monument({ scroll }: { scroll?: MotionValue<number> }) {
+function Monument({ scroll, spinSpeed }: { scroll?: MotionValue<number>; spinSpeed: number }) {
   const m = useMaterials();
   const group = useRef<THREE.Group>(null);
   const spin = useRef(0);
@@ -476,7 +476,7 @@ function Monument({ scroll }: { scroll?: MotionValue<number> }) {
     if (!g) return;
     if (!drag.current.active) {
       drag.current.v *= 0.94;
-      spin.current += drag.current.v + dt * 0.12; // slow turntable
+      spin.current += drag.current.v + dt * spinSpeed; // slow turntable
     }
     const s = scroll ? scroll.get() : 0;
     // starts exactly in the pose of the static poster, then turns slowly
@@ -521,7 +521,7 @@ function Floor() {
 function SceneFog() {
   const { scene, size } = useThree();
   useEffect(() => {
-    const portrait = size.width < size.height;
+    const portrait = size.width / size.height < 0.75;
     scene.fog = portrait ? new THREE.Fog("#050403", 46, 90) : new THREE.Fog("#050403", 24, 50);
   }, [scene, size]);
   return null;
@@ -542,7 +542,7 @@ function Rig({ scroll, shift }: { scroll?: MotionValue<number>; shift: number })
     const key = `${size.width}x${size.height}:${shift}`;
     if (offsetKey.current !== key) {
       offsetKey.current = key;
-      const shiftY = size.width < size.height ? size.height * 0.24 : 0;
+      const shiftY = size.width / size.height < 0.75 ? size.height * 0.24 : 0;
       if (shift || shiftY) cam.setViewOffset(size.width, size.height, -size.width * shift, shiftY, size.width, size.height);
       else cam.clearViewOffset();
       cam.updateProjectionMatrix();
@@ -551,7 +551,7 @@ function Rig({ scroll, shift }: { scroll?: MotionValue<number>; shift: number })
     smooth.current.x += (pointer.x - smooth.current.x) * 0.05;
     smooth.current.y += (pointer.y - smooth.current.y) * 0.05;
     const s = scroll ? scroll.get() : 0;
-    const portrait = size.width < size.height;
+    const portrait = size.width / size.height < 0.75;
     const dist = (portrait ? 48 : 28.5) - s * 4;
     camera.position.set(smooth.current.x * 1.6, 4.2 + smooth.current.y * 0.8 + s * 2.5, dist);
     camera.lookAt(target);
@@ -564,7 +564,7 @@ function ReadySignal({ onReady }: { onReady?: () => void }) {
   const frames = useRef(0);
   useFrame(() => {
     frames.current += 1;
-    if (frames.current === 8) onReady?.();
+    if (frames.current === 2) onReady?.();
   });
   return null;
 }
@@ -575,12 +575,15 @@ export default function MasjidScene({
   paused = false,
   lowPower = false,
   onReady,
+  spinSpeed = 0.12,
 }: {
   scroll?: MotionValue<number>;
   shift?: number;
   paused?: boolean;
   lowPower?: boolean;
   onReady?: () => void;
+  /** turntable speed in rad/s (0 = hold the opening pose, used for posters) */
+  spinSpeed?: number;
 }) {
   return (
     <Canvas
@@ -606,7 +609,7 @@ export default function MasjidScene({
         <Lightformer form="ring" intensity={2} color="#ffffff" position={[0, 10, -4]} scale={3} />
       </Environment>
 
-      <Monument scroll={scroll} />
+      <Monument scroll={scroll} spinSpeed={spinSpeed} />
       {!lowPower && <Floor />}
       {lowPower && (
         <mesh rotation={[-Math.PI / 2, 0, 0]}>
