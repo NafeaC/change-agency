@@ -5,8 +5,13 @@ import { useLanguage } from "../hooks/useLanguage";
 import { CONTACT } from "@/lib/site";
 import Magnetic from "./Magnetic";
 
-// three.js is heavy — load the 3D scene only in the browser, after first paint.
-const MasjidScene = lazy(() => import("./three/MasjidScene"));
+// three.js is heavy: it is loaded only in the browser, but the download starts
+// as soon as this module runs (not after hydration) so the model shows sooner.
+const loadScene = () => import("./three/MasjidScene");
+if (typeof window !== "undefined" && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  loadScene();
+}
+const MasjidScene = lazy(loadScene);
 
 const delay = (s: number) => ({ animationDelay: `${s}s` });
 
@@ -107,7 +112,6 @@ export default function Hero() {
   });
   const [visible, setVisible] = useState(true);
   const [sceneReady, setSceneReady] = useState(false);
-  const [checked, setChecked] = useState(false);
 
   useEffect(() => {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -115,7 +119,6 @@ export default function Hero() {
     const lowPower = !wideMq.matches || (navigator.hardwareConcurrency || 8) <= 4;
     const xlMq = window.matchMedia("(min-width: 1280px)");
     setThree({ on: !reduce && hasWebGL(), lowPower, wide: wideMq.matches, xl: xlMq.matches });
-    setChecked(true);
     const onChange = () => setThree((s) => ({ ...s, wide: wideMq.matches, xl: xlMq.matches }));
     wideMq.addEventListener("change", onChange);
     xlMq.addEventListener("change", onChange);
@@ -154,40 +157,37 @@ export default function Hero() {
       id="top"
       className="relative min-h-[100svh] overflow-hidden bg-[#050403] text-white"
     >
-      {/* — 3D scene (poster first, live WebGL once loaded) — */}
-      <div className="absolute inset-0">
+      {/* — 3D scene: its own area on top on mobile, full-bleed on desktop — */}
+      <div className="absolute inset-x-0 top-0 h-[54svh] lg:inset-0 lg:h-auto">
         {/* Soft amber glow behind the monument (the 3D canvas is transparent) */}
         <div
           aria-hidden="true"
-          className={`absolute inset-0 bg-[radial-gradient(ellipse_70%_40%_at_50%_24%,rgb(245_166_35/0.22),transparent_70%)] ${
+          className={`absolute inset-0 bg-[radial-gradient(ellipse_60%_55%_at_50%_50%,rgb(245_166_35/0.22),transparent_70%)] ${
             dir === "rtl"
               ? "lg:bg-[radial-gradient(ellipse_45%_60%_at_28%_45%,rgb(245_166_35/0.22),transparent_70%)]"
               : "lg:bg-[radial-gradient(ellipse_45%_60%_at_72%_45%,rgb(245_166_35/0.22),transparent_70%)]"
           }`}
         />
-        {/* Static render of the same scene: only used when live 3D can't run
-            (no WebGL / reduced motion), so the two never overlap or jump. */}
-        <picture className={`transition-opacity duration-700 ${checked && !three.on ? "opacity-100" : "opacity-0"}`}>
-          <source
-            media="(min-width: 1024px)"
-            srcSet={dir === "rtl" ? "/hero/masjid-rtl.jpg" : "/hero/masjid-ltr.jpg"}
-          />
+        {/* Static render of the same scene, visible instantly on load. It is
+            framed to line up exactly with the live 3D (same side offset,
+            object-position = model position), so the hand-over is seamless. */}
+        <picture className={`transition-opacity duration-500 ${sceneReady ? "opacity-0" : "opacity-100"}`}>
+          <source media="(min-width: 1280px)" srcSet={`/hero/masjid-xl-${dir}.webp`} type="image/webp" />
+          <source media="(min-width: 1024px)" srcSet={`/hero/masjid-lg-${dir}.webp`} type="image/webp" />
           <img
-            src="/hero/masjid-mobile.jpg"
+            src="/hero/masjid-mobile.webp"
             alt=""
             aria-hidden="true"
             fetchPriority="high"
-            className="absolute inset-0 w-full h-full object-cover"
+            className={`absolute inset-0 w-full h-full object-cover object-[50%_50%] ${
+              dir === "rtl" ? "lg:object-[24%_50%] xl:object-[30%_50%]" : "lg:object-[76%_50%] xl:object-[70%_50%]"
+            }`}
           />
         </picture>
         {three.on && (
           <SceneBoundary>
             <Suspense fallback={null}>
-              <div
-                className={`absolute inset-0 transition-[opacity,transform] duration-[1400ms] ease-out ${
-                  sceneReady ? "opacity-100 scale-100" : "opacity-0 scale-[1.03]"
-                }`}
-              >
+              <div className={`absolute inset-0 transition-opacity duration-500 ${sceneReady ? "opacity-100" : "opacity-0"}`}>
                 <MasjidScene
                   scroll={scrollYProgress}
                   shift={shift}
@@ -199,39 +199,30 @@ export default function Hero() {
             </Suspense>
           </SceneBoundary>
         )}
+        {/* mobile: fade the scene area into the page */}
+        <div className="lg:hidden absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-b from-transparent to-[#050403] pointer-events-none" />
       </div>
 
-      {/* — Legibility overlays — */}
-      <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-[#050403] via-transparent to-[#050403]/60" />
+      {/* — Legibility overlays (desktop) — */}
+      <div className="hidden lg:block absolute inset-0 pointer-events-none bg-gradient-to-t from-[#050403] via-transparent to-[#050403]/60" />
       <div
-        className={`absolute inset-0 pointer-events-none ${
+        className={`hidden lg:block absolute inset-0 pointer-events-none ${
           dir === "rtl"
-            ? "bg-gradient-to-l from-[#050403]/95 via-[#050403]/55 lg:via-[#050403]/40 to-transparent"
-            : "bg-gradient-to-r from-[#050403]/95 via-[#050403]/55 lg:via-[#050403]/40 to-transparent"
+            ? "bg-gradient-to-l from-[#050403]/95 via-[#050403]/40 to-transparent"
+            : "bg-gradient-to-r from-[#050403]/95 via-[#050403]/40 to-transparent"
         }`}
       />
-      <div className="absolute inset-0 bg-[#050403]/20 lg:bg-transparent pointer-events-none" />
       <div className="absolute inset-0 noise-bg pointer-events-none" />
 
       {/* — Content — */}
       <motion.div
         style={{ y: contentY, opacity: contentOpacity }}
-        className="relative z-10 min-h-[100svh] max-w-7xl mx-auto px-6 flex flex-col justify-end pb-8 pt-28 pointer-events-none"
+        className="relative z-10 min-h-[100svh] max-w-7xl mx-auto px-6 flex flex-col justify-end pb-8 pt-[50svh] lg:pt-28 pointer-events-none"
       >
         <div className="max-w-3xl pointer-events-auto">
-          <p
-            className="anim-fade-up inline-flex items-center gap-2.5 rounded-full border border-white/15 bg-black/40 backdrop-blur-md px-4 py-2 text-[11px] sm:text-sm text-white/85"
-            style={delay(0.1)}
-          >
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full rounded-full bg-accent opacity-75 animate-ping" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
-            </span>
-            {t("Advertising & Marketing Agency · Al-Madinah, KSA", "وكالة إعلان وتسويق · المدينة المنورة")}
-          </p>
 
           <h1
-            className="mt-6 font-bold tracking-tighter leading-[0.95] uppercase"
+            className="font-bold tracking-tighter leading-[0.95] uppercase"
             style={{ fontSize: dir === "rtl" ? "clamp(2.6rem, 6.4vw, 5.9rem)" : "clamp(2.9rem, 7.4vw, 7rem)" }}
           >
             <span className="block overflow-hidden">
