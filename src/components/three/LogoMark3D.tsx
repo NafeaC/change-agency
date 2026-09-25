@@ -13,37 +13,55 @@ const MARK_PATHS = [
 
 function Mark() {
   const group = useRef<THREE.Group>(null);
-  const geometry = useMemo(() => {
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 47">${MARK_PATHS.map((d) => `<path d="${d}"/>`).join("")}</svg>`;
-    const data = new SVGLoader().parse(svg);
-    const shapes = data.paths.flatMap((p) => SVGLoader.createShapes(p));
-    const geo = new THREE.ExtrudeGeometry(shapes, {
-      depth: 4,
-      bevelEnabled: true,
-      bevelThickness: 1.2,
-      bevelSize: 0.8,
-      bevelSegments: 6,
-      curveSegments: 32,
+  // [beak, bubble] — extruded separately so each keeps its brand colour.
+  const [beak, bubble] = useMemo(() => {
+    const geos = MARK_PATHS.map((d) => {
+      const data = new SVGLoader().parse(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 47"><path d="${d}"/></svg>`);
+      const shapes = data.paths.flatMap((p) => SVGLoader.createShapes(p));
+      return new THREE.ExtrudeGeometry(shapes, {
+        depth: 5,
+        bevelEnabled: true,
+        bevelThickness: 0.9,
+        bevelSize: 0.6,
+        bevelSegments: 8,
+        curveSegments: 48,
+      });
     });
-    geo.center();
-    geo.scale(0.06, -0.06, 0.06); // SVG y-axis points down
-    return geo;
+    // centre both parts on the combined bounds, then flip SVG's y-axis by
+    // rotation (keeps face winding and normals correct, unlike a negative scale)
+    const box = new THREE.Box3();
+    geos.forEach((g) => {
+      g.computeBoundingBox();
+      box.union(g.boundingBox!);
+    });
+    const c = box.getCenter(new THREE.Vector3());
+    geos.forEach((g) => {
+      g.translate(-c.x, -c.y, -c.z);
+      g.scale(0.065, 0.065, 0.065);
+      g.rotateX(Math.PI);
+      g.computeVertexNormals();
+    });
+    return geos;
   }, []);
 
   useFrame(({ clock, pointer }) => {
     const g = group.current;
     if (!g) return;
     const t = clock.elapsedTime;
-    // swing (never edge-on) and lean towards the pointer
-    g.rotation.y = Math.sin(t * 0.7) * 0.55 + pointer.x * 0.35;
-    g.rotation.x = Math.sin(t * 0.9) * 0.12 - pointer.y * 0.25;
-    g.position.y = Math.sin(t * 1.2) * 0.12;
+    // intro spin that settles, then a gentle swing towards the pointer
+    const intro = Math.max(0, 1 - t / 1.8);
+    g.rotation.y = intro * intro * Math.PI * 2 + Math.sin(t * 0.6) * 0.35 + pointer.x * 0.4;
+    g.rotation.x = Math.sin(t * 0.8) * 0.08 - pointer.y * 0.25;
+    g.position.y = Math.sin(t * 1.1) * 0.08;
   });
 
   return (
     <group ref={group}>
-      <mesh geometry={geometry}>
-        <meshPhysicalMaterial color="#0d0c0b" metalness={0.1} roughness={0.3} clearcoat={0.4} clearcoatRoughness={0.15} />
+      <mesh geometry={bubble}>
+        <meshPhysicalMaterial color="#f7f5f1" roughness={0.22} clearcoat={1} clearcoatRoughness={0.08} />
+      </mesh>
+      <mesh geometry={beak}>
+        <meshStandardMaterial color="#ff9500" roughness={0.45} metalness={0} emissive="#ff7a00" emissiveIntensity={0.2} envMapIntensity={0.25} />
       </mesh>
     </group>
   );
@@ -55,7 +73,7 @@ function Studio() {
   useMemo(() => {
     const pmrem = new THREE.PMREMGenerator(gl);
     scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-    scene.environmentIntensity = 0.35;
+    scene.environmentIntensity = 0.8;
     pmrem.dispose();
   }, [gl, scene]);
   return null;
@@ -63,10 +81,10 @@ function Studio() {
 
 export default function LogoMark3D() {
   return (
-    <Canvas dpr={[1, 1.75]} camera={{ position: [0, 0, 5.2], fov: 35 }} gl={{ alpha: true, antialias: true }}>
-      <ambientLight intensity={0.2} />
-      <directionalLight position={[4, 5, 6]} intensity={1.6} color="#ffffff" />
-      <directionalLight position={[-5, -3, 2]} intensity={2.5} color="#ffb347" />
+    <Canvas flat dpr={[1, 1.75]} camera={{ position: [0, 0, 6], fov: 35 }} gl={{ alpha: true, antialias: true }}>
+      <ambientLight intensity={0.25} />
+      <directionalLight position={[4, 5, 6]} intensity={2} color="#ffffff" />
+      <directionalLight position={[-5, -2, 3]} intensity={2} color="#ffb347" />
       <Studio />
       <Mark />
     </Canvas>
